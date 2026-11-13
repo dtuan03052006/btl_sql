@@ -1,0 +1,90 @@
+# ==========================================================
+# 1. Cơ sở dữ liệu & Công cụ Quản trị CSDL (Database Tools)
+# ==========================================================
+# File database cục bộ, dump, backup lớn
+*.db
+*.db3
+*.sqlite
+*.sqlite3
+*.backup
+*.dump
+*.bak
+
+# File nén backup dữ liệu
+*.sql.gz
+*.sql.zip
+*.sql.tar.gz
+
+# File SQL tạm thời & log xuất truy vấn
+temp_*.sql
+backup_*.sql
+*.log
+
+# Cấu hình & Cache của các công cụ CSDL (DBeaver, DataGrip, Navicat)
+.dbeaver/
+.dbeaver-data/
+*.dbeaver
+.navicat/
+
+# ==========================================================
+# 2. Môi trường & Bảo mật (Secrets & Environments)
+# ==========================================================
+# Không bao giờ commit thông tin đăng nhập database hoặc API key
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+
+# ==========================================================
+# 3. Trình soạn thảo & IDE (VS Code, JetBrains, Sublime)
+# ==========================================================
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# VS Code: Bỏ qua cache nội bộ, chỉ giữ cấu hình cần thiết
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ==========================================================
+# 4. Ngôn ngữ & Môi trường chạy (Python, Node.js - nếu có)
+# ==========================================================
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.pytest_cache/
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==========================================================
+# 5. Hệ điều hành & Tệp rác hệ thống (OS generated)
+# ==========================================================
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# Linux / Editor swap files
+*~
+*.swp
+*.swo
