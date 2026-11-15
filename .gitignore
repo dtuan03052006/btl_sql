@@ -1,38 +1,22 @@
 # ==========================================================
-# 1. Môi trường & Bảo mật (Secrets & Environments)
+# 1. Môi trường ảo & Python (Python & Virtual Environments)
 # ==========================================================
-.vscode/
-.env
-
-.env.*
-!.env.example
-*.pem
-*.key
-
-# ==========================================================
-# 2. Cơ sở dữ liệu, Backup & Dữ liệu nhạy cảm
-# ==========================================================
-*.sqlite
-*.sqlite3
-*.db
-*.db3
-*.backup
-*.dump
-# Bỏ qua các file SQL tạm hoặc xuất log lớn (nếu có)
-*.log
-temp_*.sql
-backup_*.sql
-
-# ==========================================================
-# 3. Python & Môi trường ảo (Virtual Environments)
-# ==========================================================
+# Byte-compiled / cache files
 __pycache__/
 *.py[cod]
 *$py.class
+*.so
+.Python
+
+# Môi trường ảo (Virtual Environments)
 venv/
 .venv/
 env/
-.env/
+ENV/
+env.bak/
+venv.bak/
+
+# Phân phối / Đóng gói (Distribution / Packaging)
 build/
 develop-eggs/
 dist/
@@ -48,17 +32,80 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Unit test, Code Coverage & Linting Cache
 .pytest_cache/
 .coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
 
 # ==========================================================
-# 4. Trình soạn thảo & IDE (VS Code, JetBrains)
+# 2. Môi trường & Bảo mật (Environment & Secrets)
 # ==========================================================
+# File cấu hình biến môi trường
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Ngoại lệ: Cho phép commit file mẫu
+!.env.example
+!.env.template
+
+# Khóa bí mật & chứng chỉ bảo mật
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.p12
+
+# ==========================================================
+# 3. Cơ sở dữ liệu, Backup & Log (Database, Backups & Logs)
+# ==========================================================
+# File database cục bộ / SQLite
+*.sqlite
+*.sqlite3
+*.db
+*.db3
+
+# File sao lưu, dump và file nén CSDL
+*.dump
+*.backup
+*.sql.bak
+*.sql.gz
+*.sql.zip
+backup_*.sql
+temp_*.sql
+
+# Logs & file tạm
+*.log
+logs/
+*.tmp
+*.temp
+
+# ==========================================================
+# 4. Trình soạn thảo & IDE (VS Code, JetBrains, Sublime, Vim)
+# ==========================================================
+# JetBrains (PyCharm, IntelliJ, ...)
 .idea/
+*.iml
+*.iws
+
+# Sublime Text
 *.sublime-project
 *.sublime-workspace
 
-# VS Code: Bỏ qua cache nội bộ, giữ lại cấu hình cần thiết
+# Vim / Emacs
+*.swp
+*.swo
+*~
+.#*
+
+# VS Code (Bỏ qua cache nội bộ, giữ lại cấu hình team dùng chung)
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
@@ -66,15 +113,29 @@ wheels/
 !.vscode/extensions.json
 
 # ==========================================================
-# 5. Hệ điều hành (OS generated files)
+# 5. Frontend & Node.js (nếu mở rộng phát triển UI)
 # ==========================================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ==========================================================
+# 6. Hệ điều hành (Operating System generated files)
+# ==========================================================
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
+
+# Windows
 Thumbs.db
-*~
-*.swp
-*.swo
+ehthumbs.db
+desktop.ini
+
+# Linux
+.directory
+.fuse_hidden*
