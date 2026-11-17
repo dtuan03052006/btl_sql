@@ -63,8 +63,13 @@ async function switchView(viewName) {
 
   // Reset active classes on nav
   document.querySelectorAll('.nav-item').forEach(el => {
-    el.classList.remove('bg-blue-600/90', 'text-white', 'shadow-sm');
-    el.classList.add('text-slate-400');
+    el.classList.remove('bg-blue-50/80', 'text-blue-700', 'font-semibold', 'border-blue-600', 'shadow-xs');
+    el.classList.add('text-slate-600', 'border-transparent');
+    const icon = el.querySelector('i');
+    if (icon) {
+      icon.classList.remove('text-blue-600');
+      icon.classList.add('text-slate-400');
+    }
   });
 
   // Show active view
@@ -73,8 +78,13 @@ async function switchView(viewName) {
 
   const navBtn = document.getElementById(`nav-${viewName}`);
   if (navBtn) {
-    navBtn.classList.remove('text-slate-400');
-    navBtn.classList.add('bg-blue-600/90', 'text-white', 'shadow-sm');
+    navBtn.classList.remove('text-slate-600', 'border-transparent');
+    navBtn.classList.add('bg-blue-50/80', 'text-blue-700', 'font-semibold', 'border-blue-600', 'shadow-xs');
+    const icon = navBtn.querySelector('i');
+    if (icon) {
+      icon.classList.remove('text-slate-400');
+      icon.classList.add('text-blue-600');
+    }
   }
 
   // Load view data
@@ -172,18 +182,12 @@ async function loadDashboardData() {
     // Cập nhật tiêu đề biểu đồ và bảng bán chạy theo ngữ cảnh (Chi nhánh / Toàn hệ thống)
     const chartTitleEl = document.getElementById('chart-revenue-title');
     if (chartTitleEl) {
-      chartTitleEl.innerHTML = `
-        <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-600"></i>
-        ${data.is_branch ? 'Doanh thu theo Nhóm thực đơn (Chi nhánh)' : 'Top 5 Chi nhánh có Doanh thu cao nhất'}
-      `;
+      chartTitleEl.innerText = data.is_branch ? 'Doanh thu theo Nhóm thực đơn (Chi nhánh)' : 'Top 5 Chi nhánh có Doanh thu cao nhất';
     }
 
     const bestSellerTitleEl = document.getElementById('best-seller-title');
     if (bestSellerTitleEl) {
-      bestSellerTitleEl.innerHTML = `
-        <i data-lucide="flame" class="w-4 h-4 text-orange-500"></i>
-        ${data.is_branch ? 'Món ăn bán chạy tại Chi nhánh' : 'Món ăn bán chạy nhất toàn hệ thống'}
-      `;
+      bestSellerTitleEl.innerText = data.is_branch ? 'Món ăn bán chạy tại Chi nhánh' : 'Món ăn bán chạy nhất toàn hệ thống';
     }
 
     // Charts
@@ -195,18 +199,19 @@ async function loadDashboardData() {
     recentBody.innerHTML = '';
     (data.recent_orders || []).forEach(o => {
       const tr = document.createElement('tr');
-      tr.className = 'hover:bg-slate-50 transition-base';
+      tr.className = 'hover:bg-slate-50/70 transition-base';
+      const isServing = o.TrangThaiOrder === 'DangXuLy';
+      const statusBadge = isServing
+        ? '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/60"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>Đang phục vụ</span>'
+        : '<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Đã thanh toán</span>';
+
       tr.innerHTML = `
-        <td class="px-4 py-3 font-mono font-semibold text-blue-600">${o.MaOrder}</td>
-        <td class="px-4 py-3 font-semibold">Bàn ${o.SoBan}</td>
+        <td class="px-4 py-3 font-mono text-xs font-medium text-slate-800">${o.MaOrder}</td>
+        <td class="px-4 py-3 font-medium text-slate-900">Bàn ${o.SoBan}</td>
         <td class="px-4 py-3 text-xs text-slate-500">${o.TenChiNhanh}</td>
-        <td class="px-4 py-3">${o.SoLuongKhach} khách</td>
-        <td class="px-4 py-3 text-xs text-slate-500">${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</td>
-        <td class="px-4 py-3">
-          <span class="px-2 py-0.5 rounded-full text-xs font-semibold ${o.TrangThaiOrder === 'DangXuLy' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}">
-            ${o.TrangThaiOrder === 'DangXuLy' ? 'Đang phục vụ' : 'Đã thanh toán'}
-          </span>
-        </td>
+        <td class="px-4 py-3 text-center text-xs text-slate-600">${o.SoLuongKhach} khách</td>
+        <td class="px-4 py-3 text-xs text-slate-500 font-mono-num">${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</td>
+        <td class="px-4 py-3">${statusBadge}</td>
       `;
       recentBody.appendChild(tr);
     });
@@ -216,11 +221,11 @@ async function loadDashboardData() {
     topBody.innerHTML = '';
     (data.top_dishes || []).forEach((m, idx) => {
       const tr = document.createElement('tr');
-      tr.className = 'hover:bg-slate-50 transition-base';
+      tr.className = 'hover:bg-slate-50/70 transition-base';
       tr.innerHTML = `
-        <td class="px-4 py-3 font-bold text-slate-400">#${idx + 1}</td>
-        <td class="px-4 py-3 font-semibold text-slate-900">${m.TenMon}</td>
-        <td class="px-4 py-3 text-right font-mono font-bold text-blue-600">${m.SoLuongBan} phần</td>
+        <td class="px-4 py-3 font-mono text-xs text-slate-400">#${idx + 1}</td>
+        <td class="px-4 py-3 font-medium text-slate-800">${m.TenMon}</td>
+        <td class="px-4 py-3 text-right font-mono-num font-semibold text-slate-900">${m.SoLuongBan} phần</td>
       `;
       topBody.appendChild(tr);
     });
@@ -246,8 +251,9 @@ function renderBranchRevenueChart(branches, isBranch = false) {
       datasets: [{
         label: isBranch ? 'Doanh thu nhóm món (VND)' : 'Doanh thu chi nhánh (VND)',
         data: values,
-        backgroundColor: '#3B82F6',
-        borderRadius: 6,
+        backgroundColor: '#2563EB',
+        hoverBackgroundColor: '#1D4ED8',
+        borderRadius: 4,
       }]
     },
     options: {
@@ -257,8 +263,15 @@ function renderBranchRevenueChart(branches, isBranch = false) {
         legend: { display: false }
       },
       scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11, family: 'Inter' }, color: '#64748B' }
+        },
         y: {
+          grid: { color: '#F1F5F9' },
           ticks: {
+            font: { size: 11, family: 'JetBrains Mono' },
+            color: '#64748B',
             callback: v => (v / 1000000) + 'M'
           }
         }
@@ -278,7 +291,7 @@ function renderTableStatusChart(b) {
       labels: ['Đang phục vụ', 'Bàn trống', 'Đã đặt trước'],
       datasets: [{
         data: [b.ban_dang_phuc_vu || 0, b.ban_trong || 0, b.ban_da_dat || 0],
-        backgroundColor: ['#DC2626', '#059669', '#D97706'],
+        backgroundColor: ['#EF4444', '#10B981', '#F59E0B'],
         borderWidth: 2,
         borderColor: '#FFFFFF'
       }]
@@ -286,10 +299,11 @@ function renderTableStatusChart(b) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '70%',
       plugins: {
         legend: {
           position: 'bottom',
-          labels: { boxWidth: 12, font: { size: 11 } }
+          labels: { boxWidth: 8, font: { size: 11, family: 'Inter' }, color: '#475569', padding: 14 }
         }
       }
     }
@@ -315,49 +329,43 @@ async function loadFloorplanData() {
       const isReserved = t.TrangThai === 'DaDat';
       const isEmpty = t.TrangThai === 'Trong';
 
-      let statusColor = 'border-emerald-200 bg-white text-emerald-700';
-      let badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      if (isServing) {
-        statusColor = 'border-red-300 bg-red-50/40 text-red-700';
-        badgeColor = 'bg-red-100 text-red-700 border-red-200';
-      } else if (isReserved) {
-        statusColor = 'border-amber-300 bg-amber-50/40 text-amber-700';
-        badgeColor = 'bg-amber-100 text-amber-700 border-amber-200';
+      let badgeHtml = '';
+      if (isEmpty) {
+        badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/80"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Trong</span>`;
+      } else if (isServing) {
+        badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200/80"><span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>DangPhucVu</span>`;
+      } else {
+        badgeHtml = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-200/80"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>DaDat</span>`;
       }
 
       const card = document.createElement('div');
-      card.className = `p-4 rounded-xl border-2 shadow-sm flex flex-col justify-between transition-base hover:shadow-md ${statusColor}`;
+      card.className = 'p-4 rounded-lg border border-slate-200 bg-white shadow-xs flex flex-col justify-between transition-base hover:border-slate-300';
       card.innerHTML = `
         <div>
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-semibold px-2 py-0.5 rounded-full border ${badgeColor}">
-              ${t.TrangThai}
-            </span>
+            ${badgeHtml}
             <span class="text-xs text-slate-400 font-medium">${t.SucChua} chỗ</span>
           </div>
-          <h4 class="text-xl font-bold text-slate-900 tracking-tight">Bàn ${t.SoBan}</h4>
-          <p class="text-[11px] text-slate-500 mt-0.5 truncate">${t.TenChiNhanh}</p>
+          <h4 class="text-base font-semibold text-slate-900 tracking-tight mt-1">Bàn ${t.SoBan}</h4>
+          <p class="text-xs text-slate-500 mt-0.5 truncate">${t.TenChiNhanh}</p>
         </div>
 
-        <div class="mt-4 pt-3 border-t border-slate-100 space-y-2">
+        <div class="mt-4 pt-3 border-t border-slate-100">
           ${isEmpty ? `
-            <button onclick="openTableOrder('${t.MaBan}')" class="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-base flex items-center justify-center gap-1.5">
-              <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
-              <span>Mở bàn & Gọi món</span>
+            <button onclick="openTableOrder('${t.MaBan}')" class="w-full py-1.5 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-medium shadow-xs transition-base text-center">
+              Mở bàn & Gọi món
             </button>
           ` : isServing ? `
             <div class="grid grid-cols-2 gap-1.5">
-              <button onclick="openTableOrder('${t.MaBan}')" class="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-base flex items-center justify-center gap-1">
-                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-                <span>Thêm món</span>
+              <button onclick="openTableOrder('${t.MaBan}')" class="py-1.5 px-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-md text-xs font-medium transition-base text-center">
+                Thêm món
               </button>
-              <button onclick="openCheckoutModal('${t.MaOrderHienTai}')" class="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-base flex items-center justify-center gap-1">
-                <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-                <span>Tính tiền</span>
+              <button onclick="openCheckoutModal('${t.MaOrderHienTai}')" class="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium shadow-xs transition-base text-center">
+                Tính tiền
               </button>
             </div>
           ` : `
-            <button onclick="setTableStatus('${t.MaBan}', 'Trong')" class="w-full py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-base">
+            <button onclick="setTableStatus('${t.MaBan}', 'Trong')" class="w-full py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium transition-base text-center">
               Hủy đặt bàn
             </button>
           `}
@@ -404,10 +412,9 @@ async function loadKitchenData() {
 
     if (items.length === 0) {
       grid.innerHTML = `
-        <div class="col-span-full p-12 text-center bg-white rounded-xl border border-slate-200">
-          <i data-lucide="check-circle" class="w-12 h-12 text-emerald-500 mx-auto mb-3"></i>
-          <h4 class="text-base font-bold text-slate-800">Bếp đã hoàn thành tất cả các món!</h4>
-          <p class="text-xs text-slate-400 mt-1">Không có món ăn nào đang chờ chế biến.</p>
+        <div class="col-span-full p-12 text-center bg-white rounded-lg border border-slate-200">
+          <h4 class="text-sm font-semibold text-slate-800">Bếp đã hoàn thành tất cả các món!</h4>
+          <p class="text-xs text-slate-500 mt-1">Không có món ăn nào đang chờ chế biến.</p>
         </div>
       `;
       lucide.createIcons();
@@ -417,43 +424,41 @@ async function loadKitchenData() {
     items.forEach(it => {
       const isCooking = it.TrangThaiBep === 'DangCheBien';
       const card = document.createElement('div');
-      card.className = `p-5 rounded-xl border-2 shadow-sm bg-white flex flex-col justify-between transition-base ${isCooking ? 'border-amber-300' : 'border-slate-200'}`;
+      card.className = 'p-4 rounded-lg border border-slate-200 bg-white shadow-xs flex flex-col justify-between transition-base hover:border-slate-300';
       card.innerHTML = `
         <div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-bold px-2 py-0.5 rounded-full ${isCooking ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-medium px-2 py-0.5 rounded ${isCooking ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-slate-100 text-slate-700 border border-slate-200'}">
               ${isCooking ? 'Đang chế biến' : 'Chờ xử lý'}
             </span>
-            <span class="text-xs font-mono font-semibold text-slate-400">${it.MaOrder}</span>
+            <span class="text-xs font-mono font-medium text-slate-400">${it.MaOrder}</span>
           </div>
 
-          <div class="flex items-start justify-between gap-3">
+          <div class="flex items-start justify-between gap-3 mt-1">
             <div>
-              <h3 class="text-lg font-bold text-slate-900">${it.TenMon}</h3>
-              <p class="text-xs text-slate-500 font-semibold mt-0.5">Bàn ${it.SoBan} • ${it.TenChiNhanh}</p>
+              <h3 class="text-base font-semibold text-slate-900">${it.TenMon}</h3>
+              <p class="text-xs text-slate-500 mt-0.5">Bàn ${it.SoBan} • ${it.TenChiNhanh}</p>
             </div>
-            <span class="text-2xl font-black text-blue-600 font-mono-num">x${it.SoLuong}</span>
+            <span class="text-xl font-bold text-slate-900 font-mono-num">x${it.SoLuong}</span>
           </div>
 
-          <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-1">
-            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
-            <span>Gọi lúc: ${it.ThoiGianGoiMon ? it.ThoiGianGoiMon.replace('T', ' ') : ''}</span>
+          <p class="text-xs text-slate-400 font-mono-num mt-3">
+            Gọi lúc: ${it.ThoiGianGoiMon ? it.ThoiGianGoiMon.replace('T', ' ') : ''}
           </p>
         </div>
 
-        <div class="mt-5 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
+        <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2">
           ${!isCooking ? `
-            <button onclick="updateKitchenStatus(${it.MaChiTietOrder}, 'DangCheBien')" class="py-2 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-semibold shadow-sm transition-base">
+            <button onclick="updateKitchenStatus(${it.MaChiTietOrder}, 'DangCheBien')" class="py-1.5 px-3 bg-amber-500 hover:bg-amber-600 text-white rounded-md text-xs font-medium transition-base text-center">
               Bắt đầu nấu
             </button>
           ` : `
-            <div class="py-2 px-3 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold text-center">
+            <div class="py-1.5 px-3 bg-amber-50 text-amber-800 rounded-md text-xs font-medium border border-amber-200 text-center">
               Đang trên bếp...
             </div>
           `}
-          <button onclick="updateKitchenStatus(${it.MaChiTietOrder}, 'HoanThanhMon')" class="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-base flex items-center justify-center gap-1">
-            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-            <span>Hoàn thành (Trừ kho)</span>
+          <button onclick="updateKitchenStatus(${it.MaChiTietOrder}, 'HoanThanhMon')" class="py-1.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-xs font-medium shadow-xs transition-base text-center">
+            Hoàn thành (Trừ kho)
           </button>
         </div>
       `;
@@ -555,16 +560,16 @@ function renderOrderMenu() {
   menuList.forEach(m => {
     const qty = orderModalSelectedItems[m.MaMonAn] || 0;
     const div = document.createElement('div');
-    div.className = 'flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100';
+    div.className = 'flex items-center justify-between p-2.5 rounded-md bg-white border border-slate-200 hover:border-slate-300 transition-base';
     div.innerHTML = `
       <div>
-        <p class="text-sm font-semibold text-slate-800">${m.TenMon}</p>
-        <p class="text-xs text-blue-600 font-mono font-medium">${new Intl.NumberFormat('vi-VN').format(m.DonGiaMon)} đ • <span class="text-slate-400">${m.TenNhom}</span></p>
+        <p class="text-sm font-medium text-slate-900">${m.TenMon}</p>
+        <p class="text-xs text-slate-500 font-mono-num font-medium">${new Intl.NumberFormat('vi-VN').format(m.DonGiaMon)} đ • <span class="text-slate-400 font-sans">${m.TenNhom}</span></p>
       </div>
-      <div class="flex items-center gap-2">
-        <button onclick="changeOrderItemQty('${m.MaMonAn}', -1)" class="w-7 h-7 rounded-md bg-white border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 flex items-center justify-center">-</button>
-        <span id="qty-${m.MaMonAn}" class="w-6 text-center text-sm font-bold font-mono">${qty}</span>
-        <button onclick="changeOrderItemQty('${m.MaMonAn}', 1)" class="w-7 h-7 rounded-md bg-blue-600 text-white font-bold hover:bg-blue-700 flex items-center justify-center">+</button>
+      <div class="flex items-center gap-1.5">
+        <button onclick="changeOrderItemQty('${m.MaMonAn}', -1)" class="w-6 h-6 rounded border border-slate-300 bg-white text-slate-700 font-medium hover:bg-slate-50 flex items-center justify-center transition-base text-xs">-</button>
+        <span id="qty-${m.MaMonAn}" class="w-6 text-center text-xs font-semibold font-mono-num text-slate-900">${qty}</span>
+        <button onclick="changeOrderItemQty('${m.MaMonAn}', 1)" class="w-6 h-6 rounded bg-blue-600 text-white font-medium hover:bg-blue-700 flex items-center justify-center transition-base text-xs">+</button>
       </div>
     `;
     container.appendChild(div);
@@ -731,13 +736,13 @@ function switchHoadonTab(tabName) {
   if (tabName === 'pending') {
     if (pendingTab) pendingTab.classList.remove('hidden');
     if (completedTab) completedTab.classList.add('hidden');
-    btnPending.className = 'px-3.5 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition-base flex items-center gap-1.5';
-    btnCompleted.className = 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5';
+    btnPending.className = 'px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs font-medium transition-base flex items-center gap-1.5';
+    btnCompleted.className = 'px-3.5 py-1.5 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-base';
   } else {
     if (pendingTab) pendingTab.classList.add('hidden');
     if (completedTab) completedTab.classList.remove('hidden');
-    btnCompleted.className = 'px-3.5 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition-base flex items-center gap-1.5';
-    btnPending.className = 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5';
+    btnCompleted.className = 'px-3.5 py-1.5 rounded-md bg-white text-slate-900 shadow-xs font-medium transition-base';
+    btnPending.className = 'px-3.5 py-1.5 rounded-md text-slate-600 hover:text-slate-900 font-medium transition-base flex items-center gap-1.5';
   }
   lucide.createIcons();
 }
@@ -761,21 +766,18 @@ async function loadHoadonData() {
         } else {
           pendingList.forEach(o => {
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-slate-50 transition-base';
+            tr.className = 'hover:bg-slate-50/70 transition-base';
             tr.innerHTML = `
-              <td class="px-5 py-3.5 font-mono font-bold text-blue-600">${o.MaOrder}</td>
-              <td class="px-5 py-3.5 font-bold text-slate-900">Bàn ${o.SoBan}</td>
-              <td class="px-5 py-3.5 text-xs text-slate-600">${o.TenChiNhanh}</td>
-              <td class="px-5 py-3.5 text-xs text-slate-500">${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</td>
-              <td class="px-5 py-3.5 text-center font-medium">${o.SoLuongKhach || 1} khách</td>
-              <td class="px-5 py-3.5 text-center font-semibold text-slate-700">${o.SoMon} món</td>
-              <td class="px-5 py-3.5 text-right font-mono font-bold text-emerald-600">${new Intl.NumberFormat('vi-VN').format(o.TamTinh)} đ</td>
+              <td class="px-5 py-3.5 font-mono text-xs font-medium text-slate-800">${o.MaOrder}</td>
+              <td class="px-5 py-3.5 font-semibold text-slate-900">Bàn ${o.SoBan}</td>
+              <td class="px-5 py-3.5 text-xs text-slate-500">${o.TenChiNhanh}</td>
+              <td class="px-5 py-3.5 text-xs text-slate-500 font-mono-num">${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</td>
+              <td class="px-5 py-3.5 text-center text-xs text-slate-600 font-medium">${o.SoLuongKhach || 1} khách</td>
+              <td class="px-5 py-3.5 text-center text-xs font-medium text-slate-700">${o.SoMon} món</td>
+              <td class="px-5 py-3.5 text-right font-mono-num font-semibold text-slate-900">${new Intl.NumberFormat('vi-VN').format(o.TamTinh)} đ</td>
               <td class="px-5 py-3.5 text-center whitespace-nowrap space-x-1.5">
-                <button onclick="openTableOrder('${o.MaBan}')" class="px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Thêm món</button>
-                <button onclick="openCheckoutModal('${o.MaOrder}')" class="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-base inline-flex items-center gap-1">
-                  <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-                  <span>Thanh toán ngay</span>
-                </button>
+                <button onclick="openTableOrder('${o.MaBan}')" class="px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-md transition-base">Thêm món</button>
+                <button onclick="openCheckoutModal('${o.MaOrder}')" class="px-3 py-1.5 text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-md shadow-xs transition-base">Thanh toán ngay</button>
               </td>
             `;
             tbodyPending.appendChild(tr);
@@ -801,17 +803,17 @@ async function loadHoadonData() {
       } else {
         list.forEach(hd => {
           const tr = document.createElement('tr');
-          tr.className = 'hover:bg-slate-50 transition-base';
+          tr.className = 'hover:bg-slate-50/70 transition-base';
           tr.innerHTML = `
-            <td class="px-5 py-3.5 font-mono font-bold text-blue-600">${hd.MaHoaDon}</td>
-            <td class="px-5 py-3.5 font-mono text-slate-500">${hd.MaOrder}</td>
-            <td class="px-5 py-3.5 text-xs text-slate-600">${hd.TenChiNhanh}</td>
-            <td class="px-5 py-3.5 font-bold">Bàn ${hd.SoBan}</td>
-            <td class="px-5 py-3.5 text-xs text-slate-500">${hd.ThoiGianLap ? hd.ThoiGianLap.replace('T', ' ') : ''}</td>
-            <td class="px-5 py-3.5 text-right font-mono font-bold text-emerald-600">${new Intl.NumberFormat('vi-VN').format(hd.TongTien)} đ</td>
-            <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${hd.PhuongThucThanhToan}</span></td>
+            <td class="px-5 py-3.5 font-mono text-xs font-medium text-slate-800">${hd.MaHoaDon}</td>
+            <td class="px-5 py-3.5 font-mono text-xs text-slate-400">${hd.MaOrder}</td>
+            <td class="px-5 py-3.5 text-xs text-slate-500">${hd.TenChiNhanh}</td>
+            <td class="px-5 py-3.5 font-semibold text-slate-900">Bàn ${hd.SoBan}</td>
+            <td class="px-5 py-3.5 text-xs text-slate-500 font-mono-num">${hd.ThoiGianLap ? hd.ThoiGianLap.replace('T', ' ') : ''}</td>
+            <td class="px-5 py-3.5 text-right font-mono-num font-semibold text-slate-900">${new Intl.NumberFormat('vi-VN').format(hd.TongTien)} đ</td>
+            <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">${hd.PhuongThucThanhToan}</span></td>
             <td class="px-5 py-3.5 text-center">
-              <button onclick="viewBillDetails('${hd.MaHoaDon}')" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Xem chi tiết</button>
+              <button onclick="viewBillDetails('${hd.MaHoaDon}')" class="px-2.5 py-1 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-md transition-base">Xem chi tiết</button>
             </td>
           `;
           tbody.appendChild(tr);
@@ -1031,6 +1033,28 @@ const CRUD_CONFIG = {
 async function openCrud(entityKey) {
   activeCrudEntity = entityKey;
   await switchView('crud');
+
+  // Highlight specific CRUD nav item
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.remove('bg-blue-50/80', 'text-blue-700', 'font-semibold', 'border-blue-600', 'shadow-xs');
+    el.classList.add('text-slate-600', 'border-transparent');
+    const icon = el.querySelector('i');
+    if (icon) {
+      icon.classList.remove('text-blue-600');
+      icon.classList.add('text-slate-400');
+    }
+  });
+  const crudNavBtn = document.getElementById(`nav-crud-${entityKey}`);
+  if (crudNavBtn) {
+    crudNavBtn.classList.remove('text-slate-600', 'border-transparent');
+    crudNavBtn.classList.add('bg-blue-50/80', 'text-blue-700', 'font-semibold', 'border-blue-600', 'shadow-xs');
+    const icon = crudNavBtn.querySelector('i');
+    if (icon) {
+      icon.classList.remove('text-slate-400');
+      icon.classList.add('text-blue-600');
+    }
+  }
+
   await loadCrudData(entityKey);
 }
 
@@ -1059,9 +1083,9 @@ function renderCrudTable(data) {
   // Header
   let headHtml = '<tr>';
   conf.columns.forEach(c => {
-    headHtml += `<th class="px-5 py-3.5">${c.label}</th>`;
+    headHtml += `<th class="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider ${c.currency ? 'text-right' : ''}">${c.label}</th>`;
   });
-  headHtml += '<th class="px-5 py-3.5 text-center">Thao tác</th></tr>';
+  headHtml += '<th class="px-4 py-3 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Thao tác</th></tr>';
   thead.innerHTML = headHtml;
 
   // Body
@@ -1069,28 +1093,28 @@ function renderCrudTable(data) {
   document.getElementById('crud-page-count').innerText = data.length;
 
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="${conf.columns.length + 1}" class="px-5 py-8 text-center text-slate-400">Không có bản ghi nào.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${conf.columns.length + 1}" class="px-4 py-8 text-center text-slate-400">Không có bản ghi nào.</td></tr>`;
     return;
   }
 
   data.forEach((row, index) => {
     const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50 transition-base';
+    tr.className = 'hover:bg-slate-50/70 transition-base';
     let rowHtml = '';
 
     conf.columns.forEach(c => {
       let val = row[c.key];
       if (c.currency) val = new Intl.NumberFormat('vi-VN').format(val) + ' đ';
       if (c.isId) {
-        rowHtml += `<td class="px-5 py-3.5 font-mono font-bold text-blue-600">${val || ''}</td>`;
+        rowHtml += `<td class="px-4 py-3 font-mono text-xs font-medium text-slate-900">${val || ''}</td>`;
       } else if (c.badge) {
-        let badgeColor = 'bg-slate-100 text-slate-700';
-        if (val === 'DangPhucVu' || val === 'DaNhan') badgeColor = 'bg-emerald-100 text-emerald-800';
-        else if (val === 'Trong' || val === 'ChuaNhan') badgeColor = 'bg-blue-100 text-blue-800';
-        else if (val === 'TamNgung' || val === 'Huy') badgeColor = 'bg-rose-100 text-rose-800';
-        rowHtml += `<td class="px-5 py-3.5"><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeColor}">${val || ''}</span></td>`;
+        let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+        if (val === 'DangPhucVu' || val === 'DaNhan') badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
+        else if (val === 'Trong' || val === 'ChuaNhan') badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+        else if (val === 'TamNgung' || val === 'Huy') badgeColor = 'bg-rose-50 text-rose-700 border-rose-200/80';
+        rowHtml += `<td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium border ${badgeColor}">${val || ''}</span></td>`;
       } else {
-        rowHtml += `<td class="px-5 py-3.5 ${c.fontMono ? 'font-mono' : ''}">${val !== null && val !== undefined ? val : ''}</td>`;
+        rowHtml += `<td class="px-4 py-3 text-sm text-slate-700 ${c.currency ? 'text-right font-mono-num font-medium text-slate-900' : ''} ${c.fontMono ? 'font-mono text-xs' : ''}">${val !== null && val !== undefined ? val : ''}</td>`;
       }
     });
 
@@ -1098,9 +1122,9 @@ function renderCrudTable(data) {
     const targetIdx = cacheIdx !== -1 ? cacheIdx : index;
 
     rowHtml += `
-      <td class="px-5 py-3.5 text-center space-x-2 whitespace-nowrap">
-        <button onclick="openEditModal(${targetIdx})" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Sửa</button>
-        <button onclick="confirmDeleteCrud(${targetIdx})" class="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-base">Xóa</button>
+      <td class="px-4 py-3 text-center space-x-1.5 whitespace-nowrap">
+        <button onclick="openEditModal(${targetIdx})" class="px-2.5 py-1 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 rounded-md transition-base">Sửa</button>
+        <button onclick="confirmDeleteCrud(${targetIdx})" class="px-2.5 py-1 text-xs font-medium text-red-600 hover:text-red-700 bg-white hover:bg-red-50 border border-slate-300 hover:border-red-200 rounded-md transition-base">Xóa</button>
       </td>
     `;
     tr.innerHTML = rowHtml;
@@ -1192,22 +1216,22 @@ function renderCrudFormFields(initialData, isEdit = false) {
 
       if (isEdit && isPkField) {
         inputHtml = `
-          <select disabled class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-slate-100 text-slate-500 cursor-not-allowed">${optionsHtml}</select>
+          <select disabled class="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm font-normal bg-slate-100 text-slate-500 cursor-not-allowed">${optionsHtml}</select>
           <input type="hidden" name="${f.name}" value="${val}">
         `;
       } else {
-        inputHtml = `<select name="${f.name}" ${f.required ? 'required' : ''} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">${optionsHtml}</select>`;
+        inputHtml = `<select name="${f.name}" ${f.required ? 'required' : ''} class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm font-normal text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none transition-base">${optionsHtml}</select>`;
       }
     } else {
       const stepAttr = f.step ? `step="${f.step}"` : (f.type === 'number' ? 'step="any"' : '');
       const placeholderAttr = f.placeholder ? `placeholder="${f.placeholder}"` : '';
-      const readonlyAttr = (isEdit && isPkField) ? 'readonly class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-slate-100 text-slate-500 cursor-not-allowed"' : 'class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"';
+      const readonlyAttr = (isEdit && isPkField) ? 'readonly class="w-full px-3 py-1.5 border border-slate-200 rounded-md text-sm font-normal bg-slate-100 text-slate-500 cursor-not-allowed font-mono text-xs"' : 'class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-sm font-normal text-slate-900 focus:border-slate-900 focus:ring-1 focus:ring-slate-900 focus:outline-none transition-base"';
 
       inputHtml = `<input type="${f.type}" name="${f.name}" value="${val}" ${stepAttr} ${placeholderAttr} ${readonlyAttr} ${f.required ? 'required' : ''}>`;
     }
 
     div.innerHTML = `
-      <label class="block text-xs font-semibold text-slate-700 mb-1">${f.label} ${f.required ? '<span class="text-red-500">*</span>' : ''}</label>
+      <label class="block text-xs font-medium text-slate-700 mb-1">${f.label} ${f.required ? '<span class="text-red-500">*</span>' : ''}</label>
       ${inputHtml}
     `;
     container.appendChild(div);
@@ -1330,23 +1354,27 @@ function showToast(message, type = 'info') {
   if (!container) return;
 
   const toast = document.createElement('div');
-  let bg = 'bg-slate-900 text-white';
+  let borderLeft = 'border-l-blue-600';
+  let iconColor = 'text-blue-600';
   let icon = 'info';
 
   if (type === 'success') {
-    bg = 'bg-emerald-600 text-white';
+    borderLeft = 'border-l-emerald-600';
+    iconColor = 'text-emerald-600';
     icon = 'check-circle';
   } else if (type === 'error') {
-    bg = 'bg-red-600 text-white';
+    borderLeft = 'border-l-rose-600';
+    iconColor = 'text-rose-600';
     icon = 'alert-triangle';
   } else if (type === 'warning') {
-    bg = 'bg-amber-600 text-white';
+    borderLeft = 'border-l-amber-600';
+    iconColor = 'text-amber-600';
     icon = 'alert-circle';
   }
 
-  toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-xs font-semibold pointer-events-auto transform transition-all duration-300 translate-y-2 opacity-0 ${bg}`;
+  toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-md shadow-elevated bg-white text-slate-800 border border-slate-200 border-l-4 ${borderLeft} text-xs font-medium pointer-events-auto transform transition-all duration-200 translate-y-2 opacity-0`;
   toast.innerHTML = `
-    <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i>
+    <i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0 ${iconColor}"></i>
     <span>${message}</span>
   `;
 
@@ -1361,6 +1389,6 @@ function showToast(message, type = 'info') {
   // Auto remove after 3.5s
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => toast.remove(), 250);
   }, 3500);
 }
