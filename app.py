@@ -872,17 +872,17 @@ def get_hoadon_details(ma_hoa_don: str):
     return {"hoa_don": hd, "items": items}
 
 
-# Đảm bảo các thư mục static và templates tồn tại
-os.makedirs("static/css", exist_ok=True)
-os.makedirs("static/js", exist_ok=True)
-os.makedirs("templates", exist_ok=True)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(BASE_DIR, "static")
+templates_dir = os.path.join(BASE_DIR, "templates")
 
 # Mount thư mục static
-app.mount("/static", StaticFiles(directory="static"), name="static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
 def serve_spa():
-    index_file = os.path.join("templates", "index.html")
+    index_file = os.path.join(templates_dir, "index.html")
     if os.path.exists(index_file):
         with open(index_file, "r", encoding="utf-8") as f:
             return f.read()
