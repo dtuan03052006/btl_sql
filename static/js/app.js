@@ -10,10 +10,16 @@ let activeView = 'dashboard';
 let activeCrudEntity = 'chinhanh';
 let crudDataCache = [];
 let branchesList = [];
+let categoriesList = [];
+let dishesList = [];
+let ingredientsList = [];
+let tablesList = [];
 let menuList = [];
 let orderModalSelectedItems = {};
 let currentCheckoutOrder = null;
 let currentDeleteCallback = null;
+let currentEditingIndex = null;
+let currentEditingRow = null;
 let branchRevenueChart = null;
 let tableStatusChart = null;
 
@@ -25,6 +31,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initClock();
   lucide.createIcons();
   await loadBranchesDropdown();
+  preloadLookupData();
   await switchView('dashboard');
 
   // Auto-refresh kitchen & dashboard every 15 seconds
@@ -49,7 +56,7 @@ async function switchView(viewName) {
   activeView = viewName;
 
   // Hide all views
-  ['dashboard', 'floorplan', 'kitchen', 'hoadon', 'crud', 'reports'].forEach(v => {
+  ['dashboard', 'floorplan', 'kitchen', 'hoadon', 'crud'].forEach(v => {
     const el = document.getElementById(`view-${v}`);
     if (el) el.classList.add('hidden');
   });
@@ -75,9 +82,25 @@ async function switchView(viewName) {
   if (viewName === 'floorplan') await loadFloorplanData();
   if (viewName === 'kitchen') await loadKitchenData();
   if (viewName === 'hoadon') await loadHoadonData();
-  if (viewName === 'reports') await loadReportQuery(1);
 
   lucide.createIcons();
+}
+
+async function preloadLookupData() {
+  try {
+    const [catRes, dishRes, ingRes, tblRes] = await Promise.all([
+      fetch(`${API_BASE}/crud/nhomthucdon`),
+      fetch(`${API_BASE}/crud/monan`),
+      fetch(`${API_BASE}/crud/nguyenlieu`),
+      fetch(`${API_BASE}/ban-an`)
+    ]);
+    if (catRes.ok) categoriesList = await catRes.json();
+    if (dishRes.ok) dishesList = await dishRes.json();
+    if (ingRes.ok) ingredientsList = await ingRes.json();
+    if (tblRes.ok) tablesList = await tblRes.json();
+  } catch (err) {
+    console.warn('Preload lookup data failed:', err);
+  }
 }
 
 async function loadBranchesDropdown() {
@@ -137,9 +160,14 @@ async function loadDashboardData() {
     document.getElementById('badge-kitchen-count').innerText = c.don_cho_bep || 0;
 
     const d = data.doanh_thu || {};
-    const rev = parseFloat(d.doanh_thu_thang_10 || 0);
+    const rev = parseFloat(d.tong_doanh_thu !== undefined ? d.tong_doanh_thu : (d.doanh_thu_thang_10 || 0));
     document.getElementById('stat-doanh-thu').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(rev);
     document.getElementById('stat-tong-hoadon').innerText = d.tong_hoa_don || 0;
+
+    const revLabel = document.getElementById('stat-doanh-thu-label');
+    if (revLabel) {
+      revLabel.innerText = data.is_branch ? 'Doanh Thu Chi Nhánh' : 'Tổng Doanh Thu Toàn Hệ Thống';
+    }
 
     // Cập nhật tiêu đề biểu đồ và bảng bán chạy theo ngữ cảnh (Chi nhánh / Toàn hệ thống)
     const chartTitleEl = document.getElementById('chart-revenue-title');
@@ -318,10 +346,16 @@ async function loadFloorplanData() {
               <span>Mở bàn & Gọi món</span>
             </button>
           ` : isServing ? `
-            <button onclick="openCheckoutModal('${t.MaOrderHienTai}')" class="w-full py-1.5 px-3 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-base flex items-center justify-center gap-1.5">
-              <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
-              <span>Tính tiền hóa đơn</span>
-            </button>
+            <div class="grid grid-cols-2 gap-1.5">
+              <button onclick="openTableOrder('${t.MaBan}')" class="py-1.5 px-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-xs font-semibold transition-base flex items-center justify-center gap-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Thêm món</span>
+              </button>
+              <button onclick="openCheckoutModal('${t.MaOrderHienTai}')" class="py-1.5 px-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-base flex items-center justify-center gap-1">
+                <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                <span>Tính tiền</span>
+              </button>
+            </div>
           ` : `
             <button onclick="setTableStatus('${t.MaBan}', 'Trong')" class="w-full py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-base">
               Hủy đặt bàn
@@ -623,6 +657,7 @@ async function openCheckoutModal(maOrder) {
       <p><strong>Mã Order:</strong> ${o.MaOrder} • <strong>Bàn:</strong> ${o.SoBan}</p>
       <p><strong>Cơ sở:</strong> ${o.TenChiNhanh}</p>
       <p><strong>Thời gian mở bàn:</strong> ${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</p>
+      <p><strong>Khách hàng / Số chỗ:</strong> ${o.SoLuongKhach || 1} khách</p>
     `;
 
     const tbody = document.getElementById('checkout-items-body');
@@ -639,6 +674,17 @@ async function openCheckoutModal(maOrder) {
     });
 
     document.getElementById('checkout-total-amount').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(data.tong_tien);
+
+    // Cấu hình giao diện Modal cho thanh toán mới
+    const titleEl = document.getElementById('checkout-modal-title');
+    if (titleEl) titleEl.innerText = 'Thanh toán Hóa đơn tại bàn';
+    const paySec = document.getElementById('checkout-payment-section');
+    if (paySec) paySec.classList.remove('hidden');
+    const btnConfirm = document.getElementById('btn-confirm-checkout');
+    if (btnConfirm) btnConfirm.classList.remove('hidden');
+    const paidBadge = document.getElementById('checkout-paid-badge');
+    if (paidBadge) paidBadge.classList.add('hidden');
+
     openModal('modal-checkout');
   } catch (err) {
     showToast(err.message, 'error');
@@ -662,50 +708,125 @@ async function confirmCheckout() {
     closeModal('modal-checkout');
     showToast(`Thanh toán thành công! Mã HĐ: ${data.ma_hoa_don}`, 'success');
 
+    // Tự động cộng tiền vào doanh thu chi nhánh và toàn hệ thống ngay lập tức
+    loadDashboardData();
     if (activeView === 'floorplan') loadFloorplanData();
     if (activeView === 'hoadon') loadHoadonData();
-    if (activeView === 'dashboard') loadDashboardData();
+    if (activeView === 'kitchen') loadKitchenData();
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
 // =====================================================================
-// 7. QUẢN LÝ HÓA ĐƠN
+// 7. QUẢN LÝ HÓA ĐƠN & THU NGÂN
 // =====================================================================
 
+function switchHoadonTab(tabName) {
+  const pendingTab = document.getElementById('hoadon-tab-pending');
+  const completedTab = document.getElementById('hoadon-tab-completed');
+  const btnPending = document.getElementById('tab-btn-pending');
+  const btnCompleted = document.getElementById('tab-btn-completed');
+
+  if (tabName === 'pending') {
+    if (pendingTab) pendingTab.classList.remove('hidden');
+    if (completedTab) completedTab.classList.add('hidden');
+    btnPending.className = 'px-3.5 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition-base flex items-center gap-1.5';
+    btnCompleted.className = 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5';
+  } else {
+    if (pendingTab) pendingTab.classList.add('hidden');
+    if (completedTab) completedTab.classList.remove('hidden');
+    btnCompleted.className = 'px-3.5 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition-base flex items-center gap-1.5';
+    btnPending.className = 'px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5';
+  }
+  lucide.createIcons();
+}
+
 async function loadHoadonData() {
+  const branchParam = (currentBranch && currentBranch !== 'ALL') ? `?ma_chi_nhanh=${encodeURIComponent(currentBranch)}` : '';
+
+  // 1. Tải các đơn đang phục vụ chờ thanh toán
   try {
-    const url = currentBranch === 'ALL' ? `${API_BASE}/crud/hoadon` : `${API_BASE}/crud/hoadon?ma_chi_nhanh=${currentBranch}`;
-    const res = await fetch(url);
+    const resPending = await fetch(`${API_BASE}/orders/pending${branchParam}`);
+    if (resPending.ok) {
+      const pendingList = await resPending.json();
+      const badgeCount = document.getElementById('badge-pending-count');
+      if (badgeCount) badgeCount.innerText = pendingList.length;
+
+      const tbodyPending = document.getElementById('pending-orders-table-body');
+      if (tbodyPending) {
+        tbodyPending.innerHTML = '';
+        if (pendingList.length === 0) {
+          tbodyPending.innerHTML = '<tr><td colspan="8" class="px-5 py-8 text-center text-slate-400">Không có đơn order nào đang chờ thanh toán tại chi nhánh này.</td></tr>';
+        } else {
+          pendingList.forEach(o => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 transition-base';
+            tr.innerHTML = `
+              <td class="px-5 py-3.5 font-mono font-bold text-blue-600">${o.MaOrder}</td>
+              <td class="px-5 py-3.5 font-bold text-slate-900">Bàn ${o.SoBan}</td>
+              <td class="px-5 py-3.5 text-xs text-slate-600">${o.TenChiNhanh}</td>
+              <td class="px-5 py-3.5 text-xs text-slate-500">${o.ThoiGianOrder ? o.ThoiGianOrder.replace('T', ' ') : ''}</td>
+              <td class="px-5 py-3.5 text-center font-medium">${o.SoLuongKhach || 1} khách</td>
+              <td class="px-5 py-3.5 text-center font-semibold text-slate-700">${o.SoMon} món</td>
+              <td class="px-5 py-3.5 text-right font-mono font-bold text-emerald-600">${new Intl.NumberFormat('vi-VN').format(o.TamTinh)} đ</td>
+              <td class="px-5 py-3.5 text-center whitespace-nowrap space-x-1.5">
+                <button onclick="openTableOrder('${o.MaBan}')" class="px-2.5 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Thêm món</button>
+                <button onclick="openCheckoutModal('${o.MaOrder}')" class="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-base inline-flex items-center gap-1">
+                  <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
+                  <span>Thanh toán ngay</span>
+                </button>
+              </td>
+            `;
+            tbodyPending.appendChild(tr);
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Lỗi tải danh sách chờ thanh toán:', err);
+  }
+
+  // 2. Tải danh sách hóa đơn đã hoàn tất
+  try {
+    const res = await fetch(`${API_BASE}/crud/hoadon${branchParam}`);
     if (!res.ok) throw new Error('Không thể tải hóa đơn');
     const list = await res.json();
 
     const tbody = document.getElementById('hoadon-table-body');
-    tbody.innerHTML = '';
-    list.forEach(hd => {
-      const tr = document.createElement('tr');
-      tr.className = 'hover:bg-slate-50 transition-base';
-      tr.innerHTML = `
-        <td class="px-5 py-3.5 font-mono font-bold text-blue-600">${hd.MaHoaDon}</td>
-        <td class="px-5 py-3.5 font-mono text-slate-500">${hd.MaOrder}</td>
-        <td class="px-5 py-3.5 text-xs text-slate-600">${hd.TenChiNhanh}</td>
-        <td class="px-5 py-3.5 font-bold">Bàn ${hd.SoBan}</td>
-        <td class="px-5 py-3.5 text-xs text-slate-500">${hd.ThoiGianLap ? hd.ThoiGianLap.replace('T', ' ') : ''}</td>
-        <td class="px-5 py-3.5 text-right font-mono font-bold text-emerald-600">${new Intl.NumberFormat('vi-VN').format(hd.TongTien)} đ</td>
-        <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${hd.PhuongThucThanhToan}</span></td>
-        <td class="px-5 py-3.5 text-center">
-          <button onclick="viewBillDetails('${hd.MaHoaDon}')" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Xem chi tiết</button>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
+    if (tbody) {
+      tbody.innerHTML = '';
+      if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-5 py-8 text-center text-slate-400">Chưa có chứng từ hóa đơn nào đã xuất.</td></tr>';
+      } else {
+        list.forEach(hd => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-slate-50 transition-base';
+          tr.innerHTML = `
+            <td class="px-5 py-3.5 font-mono font-bold text-blue-600">${hd.MaHoaDon}</td>
+            <td class="px-5 py-3.5 font-mono text-slate-500">${hd.MaOrder}</td>
+            <td class="px-5 py-3.5 text-xs text-slate-600">${hd.TenChiNhanh}</td>
+            <td class="px-5 py-3.5 font-bold">Bàn ${hd.SoBan}</td>
+            <td class="px-5 py-3.5 text-xs text-slate-500">${hd.ThoiGianLap ? hd.ThoiGianLap.replace('T', ' ') : ''}</td>
+            <td class="px-5 py-3.5 text-right font-mono font-bold text-emerald-600">${new Intl.NumberFormat('vi-VN').format(hd.TongTien)} đ</td>
+            <td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${hd.PhuongThucThanhToan}</span></td>
+            <td class="px-5 py-3.5 text-center">
+              <button onclick="viewBillDetails('${hd.MaHoaDon}')" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Xem chi tiết</button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }
+
+  lucide.createIcons();
 }
 
 async function viewBillDetails(maHoaDon) {
+  currentCheckoutOrder = null;
   try {
     const res = await fetch(`${API_BASE}/crud/hoadon/${maHoaDon}/details`);
     if (!res.ok) throw new Error('Không thể tải chi tiết hóa đơn');
@@ -716,7 +837,7 @@ async function viewBillDetails(maHoaDon) {
       <p><strong>Số HĐ:</strong> ${hd.MaHoaDon} • <strong>Bàn:</strong> ${hd.SoBan}</p>
       <p><strong>Cơ sở:</strong> ${hd.TenChiNhanh} (${hd.DiaChi})</p>
       <p><strong>Thời gian lập bill:</strong> ${hd.ThoiGianLap ? hd.ThoiGianLap.replace('T', ' ') : ''}</p>
-      <p><strong>Phương thức:</strong> ${hd.PhuongThucThanhToan}</p>
+      <p><strong>Phương thức thanh toán:</strong> <span class="font-bold text-slate-800">${hd.PhuongThucThanhToan}</span></p>
     `;
 
     const tbody = document.getElementById('checkout-items-body');
@@ -733,6 +854,17 @@ async function viewBillDetails(maHoaDon) {
     });
 
     document.getElementById('checkout-total-amount').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(hd.TongTien);
+
+    // Cấu hình giao diện Modal cho chứng từ đã thanh toán
+    const titleEl = document.getElementById('checkout-modal-title');
+    if (titleEl) titleEl.innerText = 'Chi tiết Hóa đơn thanh toán';
+    const paySec = document.getElementById('checkout-payment-section');
+    if (paySec) paySec.classList.add('hidden');
+    const btnConfirm = document.getElementById('btn-confirm-checkout');
+    if (btnConfirm) btnConfirm.classList.add('hidden');
+    const paidBadge = document.getElementById('checkout-paid-badge');
+    if (paidBadge) paidBadge.classList.remove('hidden');
+
     openModal('modal-checkout');
   } catch (err) {
     showToast(err.message, 'error');
@@ -756,10 +888,10 @@ const CRUD_CONFIG = {
       { key: 'SoDienThoai', label: 'Hotline' }
     ],
     fields: [
-      { name: 'MaChiNhanh', label: 'Mã Chi Nhánh', type: 'text', required: true },
-      { name: 'TenChiNhanh', label: 'Tên Chi Nhánh', type: 'text', required: true },
-      { name: 'DiaChi', label: 'Địa chỉ', type: 'text', required: true },
-      { name: 'SoDienThoai', label: 'Số điện thoại', type: 'text' }
+      { name: 'MaChiNhanh', label: 'Mã Chi Nhánh', type: 'text', required: true, placeholder: 'VD: CN11' },
+      { name: 'TenChiNhanh', label: 'Tên Chi Nhánh', type: 'text', required: true, placeholder: 'VD: Nhà hàng Biển Đông - Landmark 81' },
+      { name: 'DiaChi', label: 'Địa chỉ', type: 'text', required: true, placeholder: 'VD: 720A Điện Biên Phủ, P. 22, Bình Thạnh' },
+      { name: 'SoDienThoai', label: 'Số điện thoại', type: 'text', placeholder: 'VD: 0901234599' }
     ]
   },
   banan: {
@@ -775,8 +907,8 @@ const CRUD_CONFIG = {
       { key: 'TrangThai', label: 'Trạng thái', badge: true }
     ],
     fields: [
-      { name: 'MaBan', label: 'Mã Bàn', type: 'text', required: true },
-      { name: 'SoBan', label: 'Số Bàn', type: 'number', required: true },
+      { name: 'MaBan', label: 'Mã Bàn', type: 'text', required: true, placeholder: 'VD: B51' },
+      { name: 'SoBan', label: 'Số Bàn (STT)', type: 'number', required: true, placeholder: 'VD: 1' },
       { name: 'MaChiNhanh', label: 'Thuộc Chi Nhánh', type: 'select', optionsSrc: 'branches', required: true },
       { name: 'SucChua', label: 'Sức chứa (Khách)', type: 'number', default: 4 },
       { name: 'TrangThai', label: 'Trạng thái', type: 'select', options: ['Trong', 'DangPhucVu', 'DaDat'] }
@@ -792,8 +924,8 @@ const CRUD_CONFIG = {
       { key: 'TenNhom', label: 'Tên nhóm' }
     ],
     fields: [
-      { name: 'MaNhom', label: 'Mã Nhóm', type: 'text', required: true },
-      { name: 'TenNhom', label: 'Tên Nhóm Thực Đơn', type: 'text', required: true }
+      { name: 'MaNhom', label: 'Mã Nhóm', type: 'text', required: true, placeholder: 'VD: N06' },
+      { name: 'TenNhom', label: 'Tên Nhóm Thực Đơn', type: 'text', required: true, placeholder: 'VD: Dimsum & Điểm tâm' }
     ]
   },
   monan: {
@@ -809,10 +941,10 @@ const CRUD_CONFIG = {
       { key: 'TrangThaiPhucVu', label: 'Trạng thái', badge: true }
     ],
     fields: [
-      { name: 'MaMonAn', label: 'Mã Món Ăn', type: 'text', required: true },
-      { name: 'TenMon', label: 'Tên Món Ăn', type: 'text', required: true },
-      { name: 'MaNhom', label: 'Nhóm Thực Đơn', type: 'text', required: true },
-      { name: 'DonGiaMon', label: 'Đơn Giá (VND)', type: 'number', required: true },
+      { name: 'MaMonAn', label: 'Mã Món Ăn', type: 'text', required: true, placeholder: 'VD: M21' },
+      { name: 'TenMon', label: 'Tên Món Ăn', type: 'text', required: true, placeholder: 'VD: Súp vi cá hoàng gia' },
+      { name: 'MaNhom', label: 'Nhóm Thực Đơn', type: 'select', optionsSrc: 'categories', required: true },
+      { name: 'DonGiaMon', label: 'Đơn Giá (VND)', type: 'number', required: true, placeholder: 'VD: 150000' },
       { name: 'TrangThaiPhucVu', label: 'Trạng thái', type: 'select', options: ['DangPhucVu', 'TamNgung'] }
     ]
   },
@@ -827,43 +959,47 @@ const CRUD_CONFIG = {
       { key: 'DonViTinh', label: 'Đơn vị tính' }
     ],
     fields: [
-      { name: 'MaNguyenLieu', label: 'Mã Nguyên Liệu', type: 'text', required: true },
-      { name: 'TenNguyenLieu', label: 'Tên Nguyên Liệu', type: 'text', required: true },
-      { name: 'DonViTinh', label: 'Đơn Vị Tính', type: 'text', required: true }
+      { name: 'MaNguyenLieu', label: 'Mã Nguyên Liệu', type: 'text', required: true, placeholder: 'VD: NL11' },
+      { name: 'TenNguyenLieu', label: 'Tên Nguyên Liệu', type: 'text', required: true, placeholder: 'VD: Thịt cua lột tươi' },
+      { name: 'DonViTinh', label: 'Đơn Vị Tính', type: 'text', required: true, placeholder: 'kg, gram, lon...' }
     ]
   },
   khonguyenlieu: {
     title: 'Kho Nguyên Liệu Chi Nhánh',
-    desc: 'Số lượng tồn kho nguyên liệu tại từng chi nhánh',
+    desc: 'Số lượng tồn kho nguyên liệu tại từng chi nhánh (Khóa chính kép: Chi nhánh + Nguyên liệu)',
     endpoint: '/crud/khonguyenlieu',
-    idKey: 'MaNguyenLieu',
+    compositeKeys: ['MaChiNhanh', 'MaNguyenLieu'],
     columns: [
+      { key: 'MaChiNhanh', label: 'Mã CN', isId: true },
       { key: 'TenChiNhanh', label: 'Chi nhánh' },
+      { key: 'MaNguyenLieu', label: 'Mã NL', fontMono: true },
       { key: 'TenNguyenLieu', label: 'Nguyên liệu' },
       { key: 'SoLuongTon', label: 'Số lượng tồn kho', fontMono: true },
       { key: 'DonViTinh', label: 'Đơn vị' }
     ],
     fields: [
       { name: 'MaChiNhanh', label: 'Chi nhánh', type: 'select', optionsSrc: 'branches', required: true },
-      { name: 'MaNguyenLieu', label: 'Mã Nguyên Liệu', type: 'text', required: true },
-      { name: 'SoLuongTon', label: 'Số lượng tồn (>= 0)', type: 'number', required: true }
+      { name: 'MaNguyenLieu', label: 'Nguyên liệu', type: 'select', optionsSrc: 'ingredients', required: true },
+      { name: 'SoLuongTon', label: 'Số lượng tồn (>= 0)', type: 'number', step: '0.1', required: true, placeholder: 'VD: 25.5' }
     ]
   },
   dinhluongmon: {
     title: 'Định lượng món ăn (BOM)',
-    desc: 'Công thức định lượng nguyên liệu cấu thành 1 phần ăn',
+    desc: 'Công thức định lượng nguyên liệu cấu thành 1 phần ăn (Khóa chính kép: Món ăn + Nguyên liệu)',
     endpoint: '/crud/dinhluongmon',
-    idKey: 'MaMonAn',
+    compositeKeys: ['MaMonAn', 'MaNguyenLieu'],
     columns: [
+      { key: 'MaMonAn', label: 'Mã Món', isId: true },
       { key: 'TenMon', label: 'Món ăn' },
+      { key: 'MaNguyenLieu', label: 'Mã NL', fontMono: true },
       { key: 'TenNguyenLieu', label: 'Nguyên liệu thành phần' },
-      { key: 'SoLuongDinhLuong', label: 'Định lượng tiêu hao', fontMono: true },
+      { key: 'SoLuongDinhLuong', label: 'Định lượng (1 suất)', fontMono: true },
       { key: 'DonViTinh', label: 'Đơn vị tính' }
     ],
     fields: [
-      { name: 'MaMonAn', label: 'Mã Món Ăn', type: 'text', required: true },
-      { name: 'MaNguyenLieu', label: 'Mã Nguyên Liệu', type: 'text', required: true },
-      { name: 'SoLuongDinhLuong', label: 'Định lượng cần (1 suất)', type: 'number', required: true }
+      { name: 'MaMonAn', label: 'Món Ăn', type: 'select', optionsSrc: 'dishes', required: true },
+      { name: 'MaNguyenLieu', label: 'Nguyên liệu thành phần', type: 'select', optionsSrc: 'ingredients', required: true },
+      { name: 'SoLuongDinhLuong', label: 'Định lượng cần (1 suất)', type: 'number', step: '0.01', required: true, placeholder: 'VD: 0.25' }
     ]
   },
   datban: {
@@ -881,12 +1017,12 @@ const CRUD_CONFIG = {
       { key: 'TrangThai', label: 'Trạng thái', badge: true }
     ],
     fields: [
-      { name: 'MaDatBan', label: 'Mã Đặt Bàn', type: 'text', required: true },
-      { name: 'MaBan', label: 'Mã Bàn', type: 'text', required: true },
-      { name: 'TenKhachHang', label: 'Tên Khách Hàng', type: 'text', required: true },
-      { name: 'SoDienThoai', label: 'Số Điện Thoại', type: 'text', required: true },
-      { name: 'ThoiGianDat', label: 'Thời Gian Đặt (YYYY-MM-DD HH:MM:SS)', type: 'text', required: true },
-      { name: 'SoLuongKhach', label: 'Số Lượng Khách', type: 'number', required: true },
+      { name: 'MaDatBan', label: 'Mã Đặt Bàn', type: 'text', required: true, placeholder: 'VD: DB55' },
+      { name: 'MaBan', label: 'Xếp Bàn Ăn', type: 'select', optionsSrc: 'tables', required: true },
+      { name: 'TenKhachHang', label: 'Tên Khách Hàng', type: 'text', required: true, placeholder: 'VD: Trần Thị Mai' },
+      { name: 'SoDienThoai', label: 'Số Điện Thoại', type: 'text', required: true, placeholder: 'VD: 0918765432' },
+      { name: 'ThoiGianDat', label: 'Thời Gian Đặt (YYYY-MM-DD HH:MM:SS)', type: 'text', required: true, placeholder: 'VD: 2026-11-20 19:00:00' },
+      { name: 'SoLuongKhach', label: 'Số Lượng Khách', type: 'number', required: true, placeholder: 'VD: 4' },
       { name: 'TrangThai', label: 'Trạng thái', type: 'select', options: ['ChuaNhan', 'DaNhan', 'Huy'] }
     ]
   }
@@ -937,7 +1073,7 @@ function renderCrudTable(data) {
     return;
   }
 
-  data.forEach(row => {
+  data.forEach((row, index) => {
     const tr = document.createElement('tr');
     tr.className = 'hover:bg-slate-50 transition-base';
     let rowHtml = '';
@@ -948,17 +1084,23 @@ function renderCrudTable(data) {
       if (c.isId) {
         rowHtml += `<td class="px-5 py-3.5 font-mono font-bold text-blue-600">${val || ''}</td>`;
       } else if (c.badge) {
-        rowHtml += `<td class="px-5 py-3.5"><span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">${val || ''}</span></td>`;
+        let badgeColor = 'bg-slate-100 text-slate-700';
+        if (val === 'DangPhucVu' || val === 'DaNhan') badgeColor = 'bg-emerald-100 text-emerald-800';
+        else if (val === 'Trong' || val === 'ChuaNhan') badgeColor = 'bg-blue-100 text-blue-800';
+        else if (val === 'TamNgung' || val === 'Huy') badgeColor = 'bg-rose-100 text-rose-800';
+        rowHtml += `<td class="px-5 py-3.5"><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${badgeColor}">${val || ''}</span></td>`;
       } else {
         rowHtml += `<td class="px-5 py-3.5 ${c.fontMono ? 'font-mono' : ''}">${val !== null && val !== undefined ? val : ''}</td>`;
       }
     });
 
-    const idVal = row[conf.idKey];
+    const cacheIdx = crudDataCache.indexOf(row);
+    const targetIdx = cacheIdx !== -1 ? cacheIdx : index;
+
     rowHtml += `
-      <td class="px-5 py-3.5 text-center space-x-2">
-        <button onclick="openEditModal('${idVal}')" class="text-blue-600 hover:text-blue-800 text-xs font-semibold">Sửa</button>
-        <button onclick="confirmDeleteCrud('${idVal}')" class="text-red-600 hover:text-red-800 text-xs font-semibold">Xóa</button>
+      <td class="px-5 py-3.5 text-center space-x-2 whitespace-nowrap">
+        <button onclick="openEditModal(${targetIdx})" class="px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-base">Sửa</button>
+        <button onclick="confirmDeleteCrud(${targetIdx})" class="px-2.5 py-1 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-base">Xóa</button>
       </td>
     `;
     tr.innerHTML = rowHtml;
@@ -980,17 +1122,29 @@ function onCrudSearch() {
 
 function openCreateModal() {
   const conf = CRUD_CONFIG[activeCrudEntity];
+  currentEditingIndex = null;
+  currentEditingRow = null;
   document.getElementById('modal-crud-title').innerText = `Thêm mới - ${conf.title}`;
-  renderCrudFormFields({});
+  renderCrudFormFields({}, false);
   openModal('modal-crud');
 }
 
-function openEditModal(idVal) {
+function openEditModal(index) {
   const conf = CRUD_CONFIG[activeCrudEntity];
-  const row = crudDataCache.find(r => r[conf.idKey] === idVal);
+  const row = crudDataCache[index];
   if (!row) return;
 
-  document.getElementById('modal-crud-title').innerText = `Chỉnh sửa - ${conf.title} (#${idVal})`;
+  currentEditingIndex = index;
+  currentEditingRow = row;
+
+  let label = '';
+  if (conf.compositeKeys) {
+    label = `[${row[conf.compositeKeys[0]]} - ${row[conf.compositeKeys[1]]}]`;
+  } else {
+    label = `#${row[conf.idKey]}`;
+  }
+
+  document.getElementById('modal-crud-title').innerText = `Chỉnh sửa - ${conf.title} (${label})`;
   renderCrudFormFields(row, true);
   openModal('modal-crud');
 }
@@ -1000,8 +1154,11 @@ function renderCrudFormFields(initialData, isEdit = false) {
   const container = document.getElementById('crud-form-fields');
   container.innerHTML = '';
 
+  const pkKeys = conf.compositeKeys ? conf.compositeKeys : [conf.idKey];
+
   conf.fields.forEach(f => {
-    const val = initialData[f.name] !== undefined ? initialData[f.name] : (f.default || '');
+    const val = initialData[f.name] !== undefined ? initialData[f.name] : (f.default !== undefined ? f.default : '');
+    const isPkField = pkKeys.includes(f.name);
     const div = document.createElement('div');
     let inputHtml = '';
 
@@ -1011,14 +1168,42 @@ function renderCrudFormFields(initialData, isEdit = false) {
         branchesList.forEach(b => {
           optionsHtml += `<option value="${b.MaChiNhanh}" ${val === b.MaChiNhanh ? 'selected' : ''}>${b.MaChiNhanh} - ${b.TenChiNhanh}</option>`;
         });
+      } else if (f.optionsSrc === 'categories') {
+        categoriesList.forEach(c => {
+          optionsHtml += `<option value="${c.MaNhom}" ${val === c.MaNhom ? 'selected' : ''}>${c.MaNhom} - ${c.TenNhom}</option>`;
+        });
+      } else if (f.optionsSrc === 'dishes') {
+        dishesList.forEach(d => {
+          optionsHtml += `<option value="${d.MaMonAn}" ${val === d.MaMonAn ? 'selected' : ''}>${d.MaMonAn} - ${d.TenMon}</option>`;
+        });
+      } else if (f.optionsSrc === 'ingredients') {
+        ingredientsList.forEach(i => {
+          optionsHtml += `<option value="${i.MaNguyenLieu}" ${val === i.MaNguyenLieu ? 'selected' : ''}>${i.MaNguyenLieu} - ${i.TenNguyenLieu} (${i.DonViTinh})</option>`;
+        });
+      } else if (f.optionsSrc === 'tables') {
+        tablesList.forEach(t => {
+          optionsHtml += `<option value="${t.MaBan}" ${val === t.MaBan ? 'selected' : ''}>${t.MaBan} - Bàn ${t.SoBan} (${t.TenChiNhanh})</option>`;
+        });
       } else if (f.options) {
         f.options.forEach(opt => {
           optionsHtml += `<option value="${opt}" ${val === opt ? 'selected' : ''}>${opt}</option>`;
         });
       }
-      inputHtml = `<select name="${f.name}" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">${optionsHtml}</select>`;
+
+      if (isEdit && isPkField) {
+        inputHtml = `
+          <select disabled class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-slate-100 text-slate-500 cursor-not-allowed">${optionsHtml}</select>
+          <input type="hidden" name="${f.name}" value="${val}">
+        `;
+      } else {
+        inputHtml = `<select name="${f.name}" ${f.required ? 'required' : ''} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">${optionsHtml}</select>`;
+      }
     } else {
-      inputHtml = `<input type="${f.type}" name="${f.name}" value="${val}" ${isEdit && f.name === conf.idKey ? 'readonly class="bg-slate-100"' : ''} ${f.required ? 'required' : ''} class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">`;
+      const stepAttr = f.step ? `step="${f.step}"` : (f.type === 'number' ? 'step="any"' : '');
+      const placeholderAttr = f.placeholder ? `placeholder="${f.placeholder}"` : '';
+      const readonlyAttr = (isEdit && isPkField) ? 'readonly class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium bg-slate-100 text-slate-500 cursor-not-allowed"' : 'class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"';
+
+      inputHtml = `<input type="${f.type}" name="${f.name}" value="${val}" ${stepAttr} ${placeholderAttr} ${readonlyAttr} ${f.required ? 'required' : ''}>`;
     }
 
     div.innerHTML = `
@@ -1038,11 +1223,21 @@ async function handleCrudSubmit(e) {
     payload[key] = value;
   });
 
-  const idVal = payload[conf.idKey];
-  const isEdit = crudDataCache.some(r => r[conf.idKey] === idVal);
+  const isEdit = (currentEditingIndex !== null && currentEditingRow !== null);
+  let url = `${API_BASE}${conf.endpoint}`;
+  let method = 'POST';
 
-  const url = isEdit ? `${API_BASE}${conf.endpoint}/${idVal}` : `${API_BASE}${conf.endpoint}`;
-  const method = isEdit ? 'PUT' : 'POST';
+  if (isEdit) {
+    method = 'PUT';
+    if (conf.compositeKeys) {
+      const k1 = currentEditingRow[conf.compositeKeys[0]];
+      const k2 = currentEditingRow[conf.compositeKeys[1]];
+      url = `${API_BASE}${conf.endpoint}/${encodeURIComponent(k1)}/${encodeURIComponent(k2)}`;
+    } else {
+      const idVal = currentEditingRow[conf.idKey];
+      url = `${API_BASE}${conf.endpoint}/${encodeURIComponent(idVal)}`;
+    }
+  }
 
   try {
     const res = await fetch(url, {
@@ -1056,27 +1251,56 @@ async function handleCrudSubmit(e) {
     }
     const data = await res.json();
     closeModal('modal-crud');
-    showToast(data.message || 'Lưu dữ liệu thành công', 'success');
+    showToast(data.message || (isEdit ? 'Cập nhật bản ghi thành công' : 'Thêm mới bản ghi thành công'), 'success');
+    
+    // Tải lại dữ liệu bảng hiện tại
     await loadCrudData(activeCrudEntity);
+    // Đồng thời làm mới danh sách lookup nếu bảng vừa sửa ảnh hưởng đến các bảng khác
+    preloadLookupData();
+    if (['chinhanh', 'banan'].includes(activeCrudEntity)) {
+      loadBranchesDropdown();
+    }
   } catch (err) {
     showToast(err.message, 'error');
   }
 }
 
-function confirmDeleteCrud(idVal) {
+function confirmDeleteCrud(index) {
   const conf = CRUD_CONFIG[activeCrudEntity];
-  document.getElementById('delete-confirm-text').innerText = `Bạn có chắc chắn muốn xóa bản ghi #${idVal} khỏi bảng ${conf.title}?`;
+  const row = crudDataCache[index];
+  if (!row) return;
+
+  let label = '';
+  let deleteUrl = '';
+
+  if (conf.compositeKeys) {
+    const k1 = row[conf.compositeKeys[0]];
+    const k2 = row[conf.compositeKeys[1]];
+    label = `[${k1} - ${k2}]`;
+    deleteUrl = `${API_BASE}${conf.endpoint}/${encodeURIComponent(k1)}/${encodeURIComponent(k2)}`;
+  } else {
+    const idVal = row[conf.idKey];
+    label = `#${idVal}`;
+    deleteUrl = `${API_BASE}${conf.endpoint}/${encodeURIComponent(idVal)}`;
+  }
+
+  document.getElementById('delete-confirm-text').innerText = `Bạn có chắc chắn muốn xóa bản ghi ${label} khỏi bảng "${conf.title}" không?`;
   
   currentDeleteCallback = async () => {
     try {
-      const res = await fetch(`${API_BASE}${conf.endpoint}/${idVal}`, { method: 'DELETE' });
+      const res = await fetch(deleteUrl, { method: 'DELETE' });
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Không thể xóa bản ghi');
       }
+      const data = await res.json();
       closeModal('modal-delete');
-      showToast('Đã xóa bản ghi thành công', 'success');
+      showToast(data.message || 'Đã xóa bản ghi thành công', 'success');
       await loadCrudData(activeCrudEntity);
+      preloadLookupData();
+      if (['chinhanh', 'banan'].includes(activeCrudEntity)) {
+        loadBranchesDropdown();
+      }
     } catch (err) {
       showToast(err.message, 'error');
     }
@@ -1087,74 +1311,7 @@ function confirmDeleteCrud(idVal) {
 }
 
 // =====================================================================
-// 9. 8 TRUY VẤN BÁO CÁO SQL BTL
-// =====================================================================
-
-async function loadReportQuery(cauSo) {
-  document.querySelectorAll('.report-tab').forEach(b => {
-    b.classList.remove('border-blue-500', 'bg-blue-50', 'text-blue-600');
-  });
-  const activeBtn = document.getElementById(`btn-query-${cauSo}`);
-  if (activeBtn) {
-    activeBtn.classList.add('border-blue-500', 'bg-blue-50', 'text-blue-600');
-  }
-
-  try {
-    const res = await fetch(`${API_BASE}/reports/${cauSo}`);
-    if (!res.ok) throw new Error('Không thể thực thi câu truy vấn');
-    const data = await res.json();
-
-    document.getElementById('report-title').innerText = data.title;
-    document.getElementById('report-desc').innerText = data.desc;
-    document.getElementById('report-sql-text').innerText = data.sql;
-    document.getElementById('report-record-count').innerText = `${data.total_records} dòng kết quả`;
-    document.getElementById('btn-export-csv').href = `${API_BASE}/reports/${cauSo}/export-csv`;
-
-    renderReportTable(data.data || []);
-  } catch (err) {
-    showToast(err.message, 'error');
-  }
-}
-
-function renderReportTable(rows) {
-  const thead = document.getElementById('report-table-head');
-  const tbody = document.getElementById('report-table-body');
-  thead.innerHTML = '';
-  tbody.innerHTML = '';
-
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td class="p-6 text-center text-slate-400 text-xs">Không có dòng dữ liệu nào khớp với điều kiện.</td></tr>';
-    return;
-  }
-
-  // Header
-  const headers = Object.keys(rows[0]);
-  let headHtml = '<tr>';
-  headers.forEach(h => {
-    headHtml += `<th class="px-4 py-2.5 font-bold text-xs uppercase">${h}</th>`;
-  });
-  headHtml += '</tr>';
-  thead.innerHTML = headHtml;
-
-  // Body
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.className = 'hover:bg-slate-50 transition-base';
-    let rowHtml = '';
-    headers.forEach(h => {
-      let val = r[h];
-      if (typeof val === 'number' && !Number.isInteger(val)) {
-        val = val.toFixed(2);
-      }
-      rowHtml += `<td class="px-4 py-2.5 font-mono text-xs">${val !== null ? val : 'NULL'}</td>`;
-    });
-    tr.innerHTML = rowHtml;
-    tbody.appendChild(tr);
-  });
-}
-
-// =====================================================================
-// 10. MODAL & TOAST HELPERS
+// 9. MODAL & TOAST HELPERS
 // =====================================================================
 
 function openModal(modalId) {

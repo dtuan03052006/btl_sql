@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+import pymysql
 
 from db import get_db_connection
 
@@ -50,6 +51,27 @@ def execute_query(sql: str, params: tuple = (), fetch_one: bool = False, fetch_a
             if fetch_all:
                 return cursor.fetchall()
             return None
+    except pymysql.err.IntegrityError as ie:
+        if commit:
+            conn.rollback()
+        err_code = ie.args[0] if len(ie.args) > 0 else 0
+        if err_code == 1451:
+            raise HTTPException(
+                status_code=400,
+                detail="Không thể xóa hoặc sửa bản ghi này do đang có dữ liệu khác liên kết (Ràng buộc Khóa ngoại CSDL). Vui lòng kiểm tra và xóa các dữ liệu liên quan trước."
+            )
+        elif err_code == 1062:
+            raise HTTPException(
+                status_code=400,
+                detail="Mã định danh (Khóa chính / UNIQUE) này đã tồn tại trong hệ thống. Vui lòng chọn mã khác!"
+            )
+        elif err_code == 1452:
+            raise HTTPException(
+                status_code=400,
+                detail="Dữ liệu liên kết không tồn tại: Khóa ngoại tham chiếu không hợp lệ."
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Lỗi ràng buộc toàn vẹn CSDL: {str(ie)}")
     except Exception as e:
         if commit:
             conn.rollback()
@@ -62,67 +84,67 @@ def execute_query(sql: str, params: tuple = (), fetch_one: bool = False, fetch_a
 # =====================================================================
 
 class ChiNhanhSchema(BaseModel):
-    MaChiNhanh: str = Field(..., max_length=10, example="CN11")
-    TenChiNhanh: str = Field(..., max_length=100, example="Nhà hàng Biển Đông - Landmark 81")
-    DiaChi: str = Field(..., max_length=255, example="720A Điện Biên Phủ, P. 22, Bình Thạnh, TP.HCM")
-    SoDienThoai: Optional[str] = Field(None, max_length=15, example="0901234599")
+    MaChiNhanh: str = Field(..., max_length=10, examples=["CN11"])
+    TenChiNhanh: str = Field(..., max_length=100, examples=["Nhà hàng Biển Đông - Landmark 81"])
+    DiaChi: str = Field(..., max_length=255, examples=["720A Điện Biên Phủ, P. 22, Bình Thạnh, TP.HCM"])
+    SoDienThoai: Optional[str] = Field(None, max_length=15, examples=["0901234599"])
 
 class BanAnSchema(BaseModel):
-    MaBan: str = Field(..., max_length=10, example="B51")
-    SoBan: int = Field(..., gt=0, example=6)
-    MaChiNhanh: str = Field(..., max_length=10, example="CN01")
-    SucChua: int = Field(4, gt=0, example=4)
-    TrangThai: str = Field("Trong", example="Trong")
+    MaBan: str = Field(..., max_length=10, examples=["B51"])
+    SoBan: int = Field(..., gt=0, examples=[6])
+    MaChiNhanh: str = Field(..., max_length=10, examples=["CN01"])
+    SucChua: int = Field(4, gt=0, examples=[4])
+    TrangThai: str = Field("Trong", examples=["Trong"])
 
 class NhomThucDonSchema(BaseModel):
-    MaNhom: str = Field(..., max_length=10, example="N05")
-    TenNhom: str = Field(..., max_length=50, example="Tráng miệng")
+    MaNhom: str = Field(..., max_length=10, examples=["N05"])
+    TenNhom: str = Field(..., max_length=50, examples=["Tráng miệng"])
 
 class MonAnSchema(BaseModel):
-    MaMonAn: str = Field(..., max_length=10, example="M10")
-    TenMon: str = Field(..., max_length=100, example="Panna Cotta dâu tây")
-    MaNhom: str = Field(..., max_length=10, example="N01")
-    DonGiaMon: float = Field(..., gt=0, example=65000.0)
-    TrangThaiPhucVu: str = Field("DangPhucVu", example="DangPhucVu")
+    MaMonAn: str = Field(..., max_length=10, examples=["M10"])
+    TenMon: str = Field(..., max_length=100, examples=["Panna Cotta dâu tây"])
+    MaNhom: str = Field(..., max_length=10, examples=["N01"])
+    DonGiaMon: float = Field(..., gt=0, examples=[65000.0])
+    TrangThaiPhucVu: str = Field("DangPhucVu", examples=["DangPhucVu"])
 
 class NguyenLieuSchema(BaseModel):
-    MaNguyenLieu: str = Field(..., max_length=10, example="NL06")
-    TenNguyenLieu: str = Field(..., max_length=100, example="Dâu tây Đà Lạt")
-    DonViTinh: str = Field(..., max_length=20, example="kg")
+    MaNguyenLieu: str = Field(..., max_length=10, examples=["NL06"])
+    TenNguyenLieu: str = Field(..., max_length=100, examples=["Dâu tây Đà Lạt"])
+    DonViTinh: str = Field(..., max_length=20, examples=["kg"])
 
 class KhoNguyenLieuSchema(BaseModel):
-    MaChiNhanh: str = Field(..., max_length=10, example="CN01")
-    MaNguyenLieu: str = Field(..., max_length=10, example="NL01")
-    SoLuongTon: float = Field(..., ge=0, example=20.5)
+    MaChiNhanh: str = Field(..., max_length=10, examples=["CN01"])
+    MaNguyenLieu: str = Field(..., max_length=10, examples=["NL01"])
+    SoLuongTon: float = Field(..., ge=0, examples=[20.5])
 
 class DinhLuongMonSchema(BaseModel):
-    MaMonAn: str = Field(..., max_length=10, example="M01")
-    MaNguyenLieu: str = Field(..., max_length=10, example="NL01")
-    SoLuongDinhLuong: float = Field(..., gt=0, example=0.5)
+    MaMonAn: str = Field(..., max_length=10, examples=["M01"])
+    MaNguyenLieu: str = Field(..., max_length=10, examples=["NL01"])
+    SoLuongDinhLuong: float = Field(..., gt=0, examples=[0.5])
 
 class DatBanSchema(BaseModel):
-    MaDatBan: str = Field(..., max_length=10, example="DB99")
-    MaBan: str = Field(..., max_length=10, example="B01")
-    TenKhachHang: str = Field(..., max_length=100, example="Nguyễn Văn A")
-    SoDienThoai: str = Field(..., max_length=15, example="0987654321")
-    ThoiGianDat: str = Field(..., example="2026-11-20 18:30:00")
-    SoLuongKhach: int = Field(..., gt=0, example=4)
-    TrangThai: str = Field("ChuaNhan", example="ChuaNhan")
+    MaDatBan: str = Field(..., max_length=10, examples=["DB99"])
+    MaBan: str = Field(..., max_length=10, examples=["B01"])
+    TenKhachHang: str = Field(..., max_length=100, examples=["Nguyễn Văn A"])
+    SoDienThoai: str = Field(..., max_length=15, examples=["0987654321"])
+    ThoiGianDat: str = Field(..., examples=["2026-11-20 18:30:00"])
+    SoLuongKhach: int = Field(..., gt=0, examples=[4])
+    TrangThai: str = Field("ChuaNhan", examples=["ChuaNhan"])
 
 class OrderItem(BaseModel):
-    ma_mon_an: str = Field(..., example="M01")
-    so_luong: int = Field(..., gt=0, example=2)
+    ma_mon_an: str = Field(..., examples=["M01"])
+    so_luong: int = Field(..., gt=0, examples=[2])
 
 class CreateOrderRequest(BaseModel):
-    ma_ban: str = Field(..., example="B05")
-    so_luong_khach: int = Field(..., gt=0, example=4)
-    danh_sach_mon: List[OrderItem]
+    ma_ban: str = Field(..., examples=["B05"])
+    so_luong_khach: int = Field(..., gt=0, examples=[4])
+    danh_sach_mon: List[OrderItem] = Field(..., min_length=1, examples=[[{"ma_mon_an": "M01", "so_luong": 2}]])
 
 class KitchenUpdateStatus(BaseModel):
-    trang_thai: str = Field(..., example="HoanThanhMon")
+    trang_thai: str = Field(..., examples=["HoanThanhMon"])
 
 class ThanhToanRequest(BaseModel):
-    phuong_thuc: str = Field("TienMat", example="TienMat")
+    phuong_thuc: str = Field("TienMat", examples=["TienMat"])
 
 # =====================================================================
 # 1. DASHBOARD & STATS APIS
@@ -180,22 +202,23 @@ def get_dashboard_stats(ma_chi_nhanh: Optional[str] = None):
                 (SELECT COUNT(*) FROM ChiTietOrder WHERE TrangThaiBep <> 'HoanThanhMon') AS don_cho_bep
         """, fetch_one=True)
 
-    # 3. Thống kê doanh thu tháng 10 & tổng hóa đơn
+    # 3. Thống kê tổng doanh thu & tổng hóa đơn (Tự động cộng dồn toàn bộ hóa đơn thanh toán)
     if is_branch:
         rev = execute_query("""
             SELECT 
+                COALESCE(SUM(TongTien), 0) AS tong_doanh_thu,
                 COALESCE(SUM(TongTien), 0) AS doanh_thu_thang_10,
                 COUNT(*) AS tong_hoa_don
             FROM HoaDon
-            WHERE MONTH(ThoiGianLap) = 10 AND YEAR(ThoiGianLap) = 2026 AND MaChiNhanh = %s
+            WHERE MaChiNhanh = %s
         """, (ma_chi_nhanh,), fetch_one=True)
     else:
         rev = execute_query("""
             SELECT 
+                COALESCE(SUM(TongTien), 0) AS tong_doanh_thu,
                 COALESCE(SUM(TongTien), 0) AS doanh_thu_thang_10,
                 COUNT(*) AS tong_hoa_don
             FROM HoaDon
-            WHERE MONTH(ThoiGianLap) = 10 AND YEAR(ThoiGianLap) = 2026
         """, fetch_one=True)
 
     # 4. Biểu đồ doanh thu
@@ -299,6 +322,9 @@ def update_table_status(ma_ban: str, payload: dict):
     trang_thai = payload.get("trang_thai")
     if trang_thai not in ["Trong", "DangPhucVu", "DaDat"]:
         raise HTTPException(status_code=400, detail="Trạng thái bàn không hợp lệ!")
+    table = execute_query("SELECT MaBan FROM BanAn WHERE MaBan = %s", (ma_ban,), fetch_one=True)
+    if not table:
+        raise HTTPException(status_code=404, detail=f"Bàn ăn '{ma_ban}' không tồn tại!")
     execute_query("UPDATE BanAn SET TrangThai = %s WHERE MaBan = %s", (trang_thai, ma_ban), commit=True)
     return {"status": "success", "message": f"Bàn {ma_ban} đã cập nhật sang '{trang_thai}'"}
 
@@ -313,42 +339,80 @@ def get_thuc_don():
         ORDER BY n.TenNhom, m.TenMon
     """)
 
+@app.get("/api/orders/pending", tags=["Operations"])
+def get_pending_orders(ma_chi_nhanh: Optional[str] = None):
+    """Lấy danh sách các đơn order đang phục vụ cần thu ngân thanh toán"""
+    sql = """
+        SELECT o.MaOrder, o.MaBan, b.SoBan, b.MaChiNhanh, cn.TenChiNhanh, 
+               o.ThoiGianOrder, o.SoLuongKhach, o.TrangThaiOrder,
+               COALESCE(SUM(cto.SoLuong * m.DonGiaMon), 0) AS TamTinh,
+               COUNT(cto.MaChiTietOrder) AS SoMon
+        FROM DonOrder o
+        JOIN BanAn b ON o.MaBan = b.MaBan
+        JOIN ChiNhanh cn ON b.MaChiNhanh = cn.MaChiNhanh
+        LEFT JOIN ChiTietOrder cto ON o.MaOrder = cto.MaOrder
+        LEFT JOIN MonAn m ON cto.MaMonAn = m.MaMonAn
+        WHERE o.TrangThaiOrder = 'DangXuLy'
+    """
+    params = ()
+    if ma_chi_nhanh and ma_chi_nhanh != "ALL":
+        sql += " AND b.MaChiNhanh = %s"
+        params = (ma_chi_nhanh,)
+    sql += " GROUP BY o.MaOrder, o.MaBan, b.SoBan, b.MaChiNhanh, cn.TenChiNhanh, o.ThoiGianOrder, o.SoLuongKhach, o.TrangThaiOrder"
+    sql += " ORDER BY o.ThoiGianOrder DESC"
+    return execute_query(sql, params)
+
 @app.post("/api/orders", tags=["Operations"], status_code=status.HTTP_201_CREATED)
 def create_order(order_data: CreateOrderRequest):
     """
     Gọi món tại bàn:
-    * Chèn vào DonOrder -> Kích hoạt TRIGGER trg_CapNhatTrangThaiBan_AfterOrder
-    * Chèn các món vào ChiTietOrder
+    * Nếu bàn đang có đơn 'DangXuLy', tự động cộng dồn món mới vào đơn hiện tại
+    * Nếu bàn trống, tạo mới DonOrder và Trigger sẽ đổi bàn sang 'DangPhucVu'
+    * Chèn các món vào ChiTietOrder gửi tới Bếp/Bar
     """
-    # 1. Kiểm tra bàn
+    # 1. Kiểm tra danh sách món ăn
+    if not order_data.danh_sach_mon:
+        raise HTTPException(status_code=400, detail="Danh sách món ăn không được để trống!")
+
+    # 2. Kiểm tra bàn
     ban = execute_query("SELECT * FROM BanAn WHERE MaBan = %s", (order_data.ma_ban,), fetch_one=True)
     if not ban:
         raise HTTPException(status_code=404, detail="Bàn ăn không tồn tại!")
 
-    ma_order = "OD" + datetime.now().strftime("%d%H%M%S")
-    
-    # 2. Chèn DonOrder (Trigger sẽ tự động đổi trạng thái bàn sang 'DangPhucVu')
-    execute_query("""
-        INSERT INTO DonOrder (MaOrder, MaBan, ThoiGianOrder, SoLuongKhach, TrangThaiOrder)
-        VALUES (%s, %s, NOW(), %s, 'DangXuLy')
-    """, (ma_order, order_data.ma_ban, order_data.so_luong_khach), commit=True)
+    # 3. Kiểm tra xem bàn đã có đơn order đang xử lý chưa (Cộng dồn món)
+    active_order = execute_query("""
+        SELECT MaOrder FROM DonOrder 
+        WHERE MaBan = %s AND TrangThaiOrder = 'DangXuLy' 
+        ORDER BY ThoiGianOrder DESC LIMIT 1
+    """, (order_data.ma_ban,), fetch_one=True)
 
-    # 3. Chèn ChiTietOrder
+    if active_order:
+        ma_order = active_order["MaOrder"]
+        msg = f"Đã thêm món mới vào đơn {ma_order} của bàn thành công!"
+    else:
+        ma_order = "OD" + datetime.now().strftime("%d%H%M%S")
+        execute_query("""
+            INSERT INTO DonOrder (MaOrder, MaBan, ThoiGianOrder, SoLuongKhach, TrangThaiOrder)
+            VALUES (%s, %s, NOW(), %s, 'DangXuLy')
+        """, (ma_order, order_data.ma_ban, order_data.so_luong_khach), commit=True)
+        msg = "Mở bàn & gọi món thành công! Đã gửi order tới Bếp/Bar."
+
+    # 3. Chèn các món vào ChiTietOrder
     for item in order_data.danh_sach_mon:
         execute_query("""
             INSERT INTO ChiTietOrder (MaOrder, MaMonAn, SoLuong, TrangThaiBep, ThoiGianGoiMon)
             VALUES (%s, %s, %s, 'ChoXuLy', NOW())
         """, (ma_order, item.ma_mon_an, item.so_luong), commit=True)
 
-    # Lấy trạng thái bàn sau Trigger
-    ban_sau = execute_query("SELECT TrangThai FROM BanAn WHERE MaBan = %s", (order_data.ma_ban,), fetch_one=True)
+    # Đảm bảo trạng thái bàn là 'DangPhucVu'
+    execute_query("UPDATE BanAn SET TrangThai = 'DangPhucVu' WHERE MaBan = %s", (order_data.ma_ban,), commit=True)
 
     return {
         "status": "success",
-        "message": "Gọi món thành công! Đã gửi order tới Bếp/Bar.",
+        "message": msg,
         "ma_order": ma_order,
         "ma_ban": order_data.ma_ban,
-        "trang_thai_ban": ban_sau["TrangThai"] if ban_sau else "DangPhucVu"
+        "trang_thai_ban": "DangPhucVu"
     }
 
 @app.get("/api/kitchen", tags=["Operations"])
@@ -377,6 +441,12 @@ def update_kitchen_status(ma_chi_tiet_order: int, payload: KitchenUpdateStatus):
     Cập nhật trạng thái món tại Bếp:
     * Khi chuyển sang 'HoanThanhMon' -> Kích hoạt TRIGGER trg_TruTonKho_KhiHoanThanhMon tự động trừ kho!
     """
+    if payload.trang_thai not in ["ChoXuLy", "DangCheBien", "HoanThanhMon"]:
+        raise HTTPException(
+            status_code=400,
+            detail="Trạng thái bếp không hợp lệ! (Cho phép: ChoXuLy, DangCheBien, HoanThanhMon)"
+        )
+
     order_item = execute_query("SELECT * FROM ChiTietOrder WHERE MaChiTietOrder = %s", (ma_chi_tiet_order,), fetch_one=True)
     if not order_item:
         raise HTTPException(status_code=404, detail="Không tìm thấy món trong order này!")
@@ -402,14 +472,26 @@ def get_order_bill_preview(ma_order: str):
     if not order:
         raise HTTPException(status_code=404, detail="Không tìm thấy đơn order!")
 
-    items = execute_query("""
-        SELECT cto.MaMonAn, m.TenMon, SUM(cto.SoLuong) AS SoLuong, m.DonGiaMon,
-               SUM(cto.SoLuong * m.DonGiaMon) AS ThanhTien
-        FROM ChiTietOrder cto
-        JOIN MonAn m ON cto.MaMonAn = m.MaMonAn
-        WHERE cto.MaOrder = %s
-        GROUP BY cto.MaMonAn, m.TenMon, m.DonGiaMon
-    """, (ma_order,))
+    # Nếu đơn vẫn đang phục vụ, lấy tất cả các món thuộc bàn này (đảm bảo không bị sót món khi gọi thêm)
+    if order["TrangThaiOrder"] == "DangXuLy":
+        items = execute_query("""
+            SELECT cto.MaMonAn, m.TenMon, SUM(cto.SoLuong) AS SoLuong, m.DonGiaMon,
+                   SUM(cto.SoLuong * m.DonGiaMon) AS ThanhTien
+            FROM ChiTietOrder cto
+            JOIN MonAn m ON cto.MaMonAn = m.MaMonAn
+            JOIN DonOrder o ON cto.MaOrder = o.MaOrder
+            WHERE o.MaBan = %s AND o.TrangThaiOrder = 'DangXuLy'
+            GROUP BY cto.MaMonAn, m.TenMon, m.DonGiaMon
+        """, (order["MaBan"],))
+    else:
+        items = execute_query("""
+            SELECT cto.MaMonAn, m.TenMon, SUM(cto.SoLuong) AS SoLuong, m.DonGiaMon,
+                   SUM(cto.SoLuong * m.DonGiaMon) AS ThanhTien
+            FROM ChiTietOrder cto
+            JOIN MonAn m ON cto.MaMonAn = m.MaMonAn
+            WHERE cto.MaOrder = %s
+            GROUP BY cto.MaMonAn, m.TenMon, m.DonGiaMon
+        """, (ma_order,))
 
     tong_tien = sum(item["ThanhTien"] for item in items) if items else 0.0
 
@@ -423,7 +505,7 @@ def get_order_bill_preview(ma_order: str):
 def checkout_order(ma_order: str, payload: ThanhToanRequest):
     """
     Thanh toán hóa đơn:
-    * Gom nhóm món (thỏa mãn UNIQUE MaHoaDon, MaMonAn)
+    * Gom nhóm toàn bộ món của bàn đang phục vụ (thỏa mãn UNIQUE MaHoaDon, MaMonAn)
     * Chèn HoaDon & ChiTietHoaDon
     * Cập nhật DonOrder -> 'DaThanhToan' và giải phóng Bàn về 'Trong'
     """
@@ -438,21 +520,27 @@ def checkout_order(ma_order: str, payload: ThanhToanRequest):
     if order["TrangThaiOrder"] == "DaThanhToan":
         raise HTTPException(status_code=400, detail="Đơn order này đã được thanh toán trước đó!")
 
-    # Gom nhóm món đã dùng
+    # Gom nhóm toàn bộ món đã dùng của bàn đang phục vụ
     dishes = execute_query("""
         SELECT cto.MaMonAn, SUM(cto.SoLuong) AS TongSoLuong, m.DonGiaMon,
                SUM(cto.SoLuong * m.DonGiaMon) AS ThanhTien
         FROM ChiTietOrder cto
         JOIN MonAn m ON cto.MaMonAn = m.MaMonAn
-        WHERE cto.MaOrder = %s
+        JOIN DonOrder o ON cto.MaOrder = o.MaOrder
+        WHERE o.MaBan = %s AND o.TrangThaiOrder = 'DangXuLy'
         GROUP BY cto.MaMonAn, m.DonGiaMon
-    """, (ma_order,))
+    """, (order["MaBan"],))
 
     if not dishes:
         raise HTTPException(status_code=400, detail="Đơn order chưa có món ăn nào!")
 
     tong_tien = sum(d["ThanhTien"] for d in dishes)
+    
+    import time
     ma_hoa_don = "HD" + datetime.now().strftime("%d%H%M%S")
+    chk = execute_query("SELECT MaHoaDon FROM HoaDon WHERE MaHoaDon = %s", (ma_hoa_don,), fetch_one=True)
+    if chk:
+        ma_hoa_don = "HD" + str(int(time.time()))[-8:]
 
     # 1. Chèn HoaDon
     execute_query("""
@@ -467,8 +555,8 @@ def checkout_order(ma_order: str, payload: ThanhToanRequest):
             VALUES (%s, %s, %s, %s, %s)
         """, (ma_hoa_don, d["MaMonAn"], d["TongSoLuong"], d["DonGiaMon"], d["ThanhTien"]), commit=True)
 
-    # 3. Đổi trạng thái order và bàn
-    execute_query("UPDATE DonOrder SET TrangThaiOrder = 'DaThanhToan' WHERE MaOrder = %s", (ma_order,), commit=True)
+    # 3. Đổi trạng thái toàn bộ order của bàn này sang 'DaThanhToan' và giải phóng bàn về 'Trong'
+    execute_query("UPDATE DonOrder SET TrangThaiOrder = 'DaThanhToan' WHERE MaBan = %s AND TrangThaiOrder = 'DangXuLy'", (order["MaBan"],), commit=True)
     execute_query("UPDATE BanAn SET TrangThai = 'Trong' WHERE MaBan = %s", (order["MaBan"],), commit=True)
 
     return {
@@ -496,12 +584,16 @@ def create_chinhanh(item: ChiNhanhSchema):
 
 @app.put("/api/crud/chinhanh/{id}", tags=["CRUD ChiNhanh"])
 def update_chinhanh(id: str, item: ChiNhanhSchema):
+    if not execute_query("SELECT 1 FROM ChiNhanh WHERE MaChiNhanh = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy chi nhánh '{id}'!")
     execute_query("UPDATE ChiNhanh SET TenChiNhanh = %s, DiaChi = %s, SoDienThoai = %s WHERE MaChiNhanh = %s",
                   (item.TenChiNhanh, item.DiaChi, item.SoDienThoai, id), commit=True)
     return {"status": "success", "message": "Đã cập nhật chi nhánh"}
 
 @app.delete("/api/crud/chinhanh/{id}", tags=["CRUD ChiNhanh"])
 def delete_chinhanh(id: str):
+    if not execute_query("SELECT 1 FROM ChiNhanh WHERE MaChiNhanh = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy chi nhánh '{id}'!")
     execute_query("DELETE FROM ChiNhanh WHERE MaChiNhanh = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa chi nhánh"}
 
@@ -523,12 +615,16 @@ def create_banan(item: BanAnSchema):
 
 @app.put("/api/crud/banan/{id}", tags=["CRUD BanAn"])
 def update_banan(id: str, item: BanAnSchema):
+    if not execute_query("SELECT 1 FROM BanAn WHERE MaBan = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy bàn ăn '{id}'!")
     execute_query("UPDATE BanAn SET SoBan = %s, MaChiNhanh = %s, SucChua = %s, TrangThai = %s WHERE MaBan = %s",
                   (item.SoBan, item.MaChiNhanh, item.SucChua, item.TrangThai, id), commit=True)
     return {"status": "success", "message": "Đã cập nhật bàn ăn"}
 
 @app.delete("/api/crud/banan/{id}", tags=["CRUD BanAn"])
 def delete_banan(id: str):
+    if not execute_query("SELECT 1 FROM BanAn WHERE MaBan = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy bàn ăn '{id}'!")
     execute_query("DELETE FROM BanAn WHERE MaBan = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa bàn ăn"}
 
@@ -544,11 +640,15 @@ def create_nhomthucdon(item: NhomThucDonSchema):
 
 @app.put("/api/crud/nhomthucdon/{id}", tags=["CRUD NhomThucDon"])
 def update_nhomthucdon(id: str, item: NhomThucDonSchema):
+    if not execute_query("SELECT 1 FROM NhomThucDon WHERE MaNhom = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nhóm thực đơn '{id}'!")
     execute_query("UPDATE NhomThucDon SET TenNhom = %s WHERE MaNhom = %s", (item.TenNhom, id), commit=True)
     return {"status": "success", "message": "Đã cập nhật nhóm thực đơn"}
 
 @app.delete("/api/crud/nhomthucdon/{id}", tags=["CRUD NhomThucDon"])
 def delete_nhomthucdon(id: str):
+    if not execute_query("SELECT 1 FROM NhomThucDon WHERE MaNhom = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nhóm thực đơn '{id}'!")
     execute_query("DELETE FROM NhomThucDon WHERE MaNhom = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa nhóm thực đơn"}
 
@@ -570,12 +670,16 @@ def create_monan(item: MonAnSchema):
 
 @app.put("/api/crud/monan/{id}", tags=["CRUD MonAn"])
 def update_monan(id: str, item: MonAnSchema):
+    if not execute_query("SELECT 1 FROM MonAn WHERE MaMonAn = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy món ăn '{id}'!")
     execute_query("UPDATE MonAn SET TenMon = %s, MaNhom = %s, DonGiaMon = %s, TrangThaiPhucVu = %s WHERE MaMonAn = %s",
                   (item.TenMon, item.MaNhom, item.DonGiaMon, item.TrangThaiPhucVu, id), commit=True)
     return {"status": "success", "message": "Đã cập nhật món ăn"}
 
 @app.delete("/api/crud/monan/{id}", tags=["CRUD MonAn"])
 def delete_monan(id: str):
+    if not execute_query("SELECT 1 FROM MonAn WHERE MaMonAn = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy món ăn '{id}'!")
     execute_query("DELETE FROM MonAn WHERE MaMonAn = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa món ăn"}
 
@@ -592,12 +696,16 @@ def create_nguyenlieu(item: NguyenLieuSchema):
 
 @app.put("/api/crud/nguyenlieu/{id}", tags=["CRUD NguyenLieu"])
 def update_nguyenlieu(id: str, item: NguyenLieuSchema):
+    if not execute_query("SELECT 1 FROM NguyenLieu WHERE MaNguyenLieu = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nguyên liệu '{id}'!")
     execute_query("UPDATE NguyenLieu SET TenNguyenLieu = %s, DonViTinh = %s WHERE MaNguyenLieu = %s",
                   (item.TenNguyenLieu, item.DonViTinh, id), commit=True)
     return {"status": "success", "message": "Đã cập nhật nguyên liệu"}
 
 @app.delete("/api/crud/nguyenlieu/{id}", tags=["CRUD NguyenLieu"])
 def delete_nguyenlieu(id: str):
+    if not execute_query("SELECT 1 FROM NguyenLieu WHERE MaNguyenLieu = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nguyên liệu '{id}'!")
     execute_query("DELETE FROM NguyenLieu WHERE MaNguyenLieu = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa nguyên liệu"}
 
@@ -626,8 +734,21 @@ def upsert_kho(item: KhoNguyenLieuSchema):
     """, (item.MaChiNhanh, item.MaNguyenLieu, item.SoLuongTon), commit=True)
     return {"status": "success", "message": "Đã cập nhật số lượng tồn kho"}
 
+@app.put("/api/crud/khonguyenlieu/{ma_cn}/{ma_nl}", tags=["CRUD Kho"])
+def update_kho(ma_cn: str, ma_nl: str, item: KhoNguyenLieuSchema):
+    if not execute_query("SELECT 1 FROM KhoNguyenLieu WHERE MaChiNhanh = %s AND MaNguyenLieu = %s", (ma_cn, ma_nl), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nguyên liệu '{ma_nl}' trong kho chi nhánh '{ma_cn}'!")
+    execute_query("""
+        UPDATE KhoNguyenLieu 
+        SET SoLuongTon = %s 
+        WHERE MaChiNhanh = %s AND MaNguyenLieu = %s
+    """, (item.SoLuongTon, ma_cn, ma_nl), commit=True)
+    return {"status": "success", "message": "Đã cập nhật số lượng tồn kho"}
+
 @app.delete("/api/crud/khonguyenlieu/{ma_cn}/{ma_nl}", tags=["CRUD Kho"])
 def delete_kho(ma_cn: str, ma_nl: str):
+    if not execute_query("SELECT 1 FROM KhoNguyenLieu WHERE MaChiNhanh = %s AND MaNguyenLieu = %s", (ma_cn, ma_nl), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy nguyên liệu '{ma_nl}' trong kho chi nhánh '{ma_cn}'!")
     execute_query("DELETE FROM KhoNguyenLieu WHERE MaChiNhanh = %s AND MaNguyenLieu = %s", (ma_cn, ma_nl), commit=True)
     return {"status": "success", "message": "Đã xóa mặt hàng khỏi kho chi nhánh"}
 
@@ -656,8 +777,21 @@ def upsert_dinhluong(item: DinhLuongMonSchema):
     """, (item.MaMonAn, item.MaNguyenLieu, item.SoLuongDinhLuong), commit=True)
     return {"status": "success", "message": "Đã lưu công thức định lượng"}
 
+@app.put("/api/crud/dinhluongmon/{ma_mon}/{ma_nl}", tags=["CRUD DinhLuong"])
+def update_dinhluong(ma_mon: str, ma_nl: str, item: DinhLuongMonSchema):
+    if not execute_query("SELECT 1 FROM DinhLuongMon WHERE MaMonAn = %s AND MaNguyenLieu = %s", (ma_mon, ma_nl), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy định lượng món '{ma_mon}' với nguyên liệu '{ma_nl}'!")
+    execute_query("""
+        UPDATE DinhLuongMon 
+        SET SoLuongDinhLuong = %s 
+        WHERE MaMonAn = %s AND MaNguyenLieu = %s
+    """, (item.SoLuongDinhLuong, ma_mon, ma_nl), commit=True)
+    return {"status": "success", "message": "Đã cập nhật định lượng món ăn"}
+
 @app.delete("/api/crud/dinhluongmon/{ma_mon}/{ma_nl}", tags=["CRUD DinhLuong"])
 def delete_dinhluong(ma_mon: str, ma_nl: str):
+    if not execute_query("SELECT 1 FROM DinhLuongMon WHERE MaMonAn = %s AND MaNguyenLieu = %s", (ma_mon, ma_nl), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy định lượng món '{ma_mon}' với nguyên liệu '{ma_nl}'!")
     execute_query("DELETE FROM DinhLuongMon WHERE MaMonAn = %s AND MaNguyenLieu = %s", (ma_mon, ma_nl), commit=True)
     return {"status": "success", "message": "Đã xóa định lượng nguyên liệu"}
 
@@ -682,6 +816,8 @@ def create_datban(item: DatBanSchema):
 
 @app.put("/api/crud/datban/{id}", tags=["CRUD DatBan"])
 def update_datban(id: str, item: DatBanSchema):
+    if not execute_query("SELECT 1 FROM DatBan WHERE MaDatBan = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy lịch đặt bàn '{id}'!")
     execute_query("""
         UPDATE DatBan 
         SET MaBan = %s, TenKhachHang = %s, SoDienThoai = %s, ThoiGianDat = %s, SoLuongKhach = %s, TrangThai = %s
@@ -691,6 +827,8 @@ def update_datban(id: str, item: DatBanSchema):
 
 @app.delete("/api/crud/datban/{id}", tags=["CRUD DatBan"])
 def delete_datban(id: str):
+    if not execute_query("SELECT 1 FROM DatBan WHERE MaDatBan = %s", (id,), fetch_one=True):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy lịch đặt bàn '{id}'!")
     execute_query("DELETE FROM DatBan WHERE MaDatBan = %s", (id,), commit=True)
     return {"status": "success", "message": "Đã xóa lịch đặt bàn"}
 
@@ -733,216 +871,6 @@ def get_hoadon_details(ma_hoa_don: str):
 
     return {"hoa_don": hd, "items": items}
 
-# =====================================================================
-# 4. HỆ THỐNG 8 TRUY VẤN BÁO CÁO SQL BTL (KÈM EXPORT CSV)
-# =====================================================================
-
-QUERIES_META = {
-    1: {
-        "title": "Câu 1 (Cơ bản): Món Hải sản tạm ngưng phục vụ",
-        "desc": "Tìm các món ăn thuộc nhóm 'Hải sản' đang tạm ngưng phục vụ (do hết nguyên liệu).",
-        "sql": """
-            SELECT m.MaMonAn, m.TenMon, m.DonGiaMon, m.TrangThaiPhucVu
-            FROM MonAn m
-            JOIN NhomThucDon n ON m.MaNhom = n.MaNhom
-            WHERE n.TenNhom = 'Hải sản' AND m.TrangThaiPhucVu = 'TamNgung';
-        """
-    },
-    2: {
-        "title": "Câu 2 (Inner Join): Chi tiết hóa đơn cho bàn số 5",
-        "desc": "In chi tiết hóa đơn bao gồm tên món, số lượng, đơn giá và tổng tiền cho bàn số 5.",
-        "sql": """
-            SELECT hd.MaHoaDon, b.SoBan, m.TenMon, cthd.SoLuong, cthd.DonGiaBan AS DonGia, cthd.ThanhTien AS TongTienMon
-            FROM HoaDon hd
-            INNER JOIN DonOrder od ON hd.MaOrder = od.MaOrder
-            INNER JOIN BanAn b ON od.MaBan = b.MaBan
-            INNER JOIN ChiTietHoaDon cthd ON hd.MaHoaDon = cthd.MaHoaDon
-            INNER JOIN MonAn m ON cthd.MaMonAn = m.MaMonAn
-            WHERE b.SoBan = 5;
-        """
-    },
-    3: {
-        "title": "Câu 3 (Group By): Doanh thu trung bình mỗi ngày theo chi nhánh (Tháng 10)",
-        "desc": "Thống kê doanh thu trung bình mỗi ngày theo từng chi nhánh trong tháng 10.",
-        "sql": """
-            SELECT cn.MaChiNhanh, cn.TenChiNhanh,
-                   COUNT(DISTINCT DATE(hd.ThoiGianLap)) AS SoNgayCoDoanhThu,
-                   SUM(hd.TongTien) AS TongDoanhThuThang10,
-                   ROUND(SUM(hd.TongTien) / COUNT(DISTINCT DATE(hd.ThoiGianLap)), 2) AS DoanhThuTrungBinhMoiNgay
-            FROM ChiNhanh cn
-            INNER JOIN HoaDon hd ON cn.MaChiNhanh = hd.MaChiNhanh
-            WHERE MONTH(hd.ThoiGianLap) = 10 AND YEAR(hd.ThoiGianLap) = 2026
-            GROUP BY cn.MaChiNhanh, cn.TenChiNhanh;
-        """
-    },
-    4: {
-        "title": "Câu 4 (Having): Món ăn bán chậm dưới 10 phần trong tháng",
-        "desc": "Tìm các món ăn có số lượng bán ra trong tháng < 10 phần (món bán chậm cần loại khỏi menu).",
-        "sql": """
-            SELECT m.MaMonAn, m.TenMon, n.TenNhom, COALESCE(SUM(cthd.SoLuong), 0) AS TongSoLuongBan
-            FROM MonAn m
-            INNER JOIN NhomThucDon n ON m.MaNhom = n.MaNhom
-            INNER JOIN ChiTietHoaDon cthd ON m.MaMonAn = cthd.MaMonAn
-            INNER JOIN HoaDon hd ON cthd.MaHoaDon = hd.MaHoaDon
-            WHERE MONTH(hd.ThoiGianLap) = 10 AND YEAR(hd.ThoiGianLap) = 2026
-            GROUP BY m.MaMonAn, m.TenMon, n.TenNhom
-            HAVING SUM(cthd.SoLuong) < 10;
-        """
-    },
-    5: {
-        "title": "Câu 5 (Outer Join): Tần suất xuất hiện trên hóa đơn (bao gồm món chưa bán)",
-        "desc": "Liệt kê tất cả các món ăn trong menu và số lần xuất hiện trên hóa đơn (bao gồm cả món mới chưa ai gọi bao giờ).",
-        "sql": """
-            SELECT m.MaMonAn, m.TenMon, n.TenNhom, COUNT(cthd.MaHoaDon) AS SoLanXuatHienTrenHoaDon
-            FROM MonAn m
-            INNER JOIN NhomThucDon n ON m.MaNhom = n.MaNhom
-            LEFT OUTER JOIN ChiTietHoaDon cthd ON m.MaMonAn = cthd.MaMonAn
-            GROUP BY m.MaMonAn, m.TenMon, n.TenNhom
-            ORDER BY SoLanXuatHienTrenHoaDon ASC;
-        """
-    },
-    6: {
-        "title": "Câu 6 (Correlated Subquery): Nguyên liệu tiêu thụ vượt mức trung bình ngày",
-        "desc": "Tìm nguyên liệu có lượng tiêu thụ trong ngày vượt quá mức tiêu thụ trung bình của tất cả nguyên liệu.",
-        "sql": """
-            SELECT nl.MaNguyenLieu, nl.TenNguyenLieu, nl.DonViTinh, tieu_thu.TongLuongDung
-            FROM NguyenLieu nl
-            INNER JOIN (
-                SELECT dlm.MaNguyenLieu, SUM(dlm.SoLuongDinhLuong * cto.SoLuong) AS TongLuongDung
-                FROM ChiTietOrder cto
-                INNER JOIN DinhLuongMon dlm ON cto.MaMonAn = dlm.MaMonAn
-                WHERE DATE(cto.ThoiGianGoiMon) = '2026-10-15' AND cto.TrangThaiBep = 'HoanThanhMon'
-                GROUP BY dlm.MaNguyenLieu
-            ) tieu_thu ON nl.MaNguyenLieu = tieu_thu.MaNguyenLieu
-            WHERE tieu_thu.TongLuongDung > (
-                SELECT AVG(tong_tung_loai)
-                FROM (
-                    SELECT SUM(dlm2.SoLuongDinhLuong * cto2.SoLuong) AS tong_tung_loai
-                    FROM ChiTietOrder cto2
-                    INNER JOIN DinhLuongMon dlm2 ON cto2.MaMonAn = dlm2.MaMonAn
-                    WHERE DATE(cto2.ThoiGianGoiMon) = '2026-10-15' AND cto2.TrangThaiBep = 'HoanThanhMon'
-                    GROUP BY dlm2.MaNguyenLieu
-                ) bang_tb
-            );
-        """
-    },
-    7: {
-        "title": "Câu 7 (Subquery): Chi nhánh có doanh thu đồ uống cao nhất hệ thống",
-        "desc": "Tìm chi nhánh có doanh thu bán món đồ uống cao nhất toàn hệ thống.",
-        "sql": """
-            SELECT cn.MaChiNhanh, cn.TenChiNhanh, SUM(cthd.ThanhTien) AS DoanhThuDoUong
-            FROM ChiNhanh cn
-            JOIN HoaDon hd ON cn.MaChiNhanh = hd.MaChiNhanh
-            JOIN ChiTietHoaDon cthd ON hd.MaHoaDon = cthd.MaHoaDon
-            JOIN MonAn m ON cthd.MaMonAn = m.MaMonAn
-            JOIN NhomThucDon n ON m.MaNhom = n.MaNhom
-            WHERE n.TenNhom = 'Đồ uống'
-            GROUP BY cn.MaChiNhanh, cn.TenChiNhanh
-            HAVING SUM(cthd.ThanhTien) >= ALL (
-                SELECT SUM(cthd2.ThanhTien)
-                FROM HoaDon hd2
-                JOIN ChiTietHoaDon cthd2 ON hd2.MaHoaDon = cthd2.MaHoaDon
-                JOIN MonAn m2 ON cthd2.MaMonAn = m2.MaMonAn
-                JOIN NhomThucDon n2 ON m2.MaNhom = n2.MaNhom
-                WHERE n2.TenNhom = 'Đồ uống'
-                GROUP BY hd2.MaChiNhanh
-            );
-        """
-    },
-    8: {
-        "title": "Câu 8 (Window Functions): Phân tích khung giờ cao điểm và xếp hạng doanh thu",
-        "desc": "Thống kê số lượng order và doanh thu theo từng khung giờ trong ngày kèm DENSE_RANK().",
-        "sql": """
-            WITH KhungGioData AS (
-                SELECT 
-                    CASE 
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 8 AND 9 THEN '08:00 - 09:59 (Sáng sớm)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 10 AND 11 THEN '10:00 - 11:59 (Trưa / Peak 1)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 12 AND 13 THEN '12:00 - 13:59 (Chiều sớm)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 14 AND 17 THEN '14:00 - 17:59 (Xế chiều)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 18 AND 20 THEN '18:00 - 20:59 (Tối / Peak 2)'
-                        ELSE '21:00 - 23:59 (Đêm muộn)'
-                    END AS KhungGio,
-                    COUNT(DISTINCT od.MaOrder) AS SoLuongOrder,
-                    COALESCE(SUM(hd.TongTien), 0) AS TongDoanhThu
-                FROM DonOrder od
-                LEFT JOIN HoaDon hd ON od.MaOrder = hd.MaOrder
-                GROUP BY 
-                    CASE 
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 8 AND 9 THEN '08:00 - 09:59 (Sáng sớm)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 10 AND 11 THEN '10:00 - 11:59 (Trưa / Peak 1)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 12 AND 13 THEN '12:00 - 13:59 (Chiều sớm)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 14 AND 17 THEN '14:00 - 17:59 (Xế chiều)'
-                        WHEN HOUR(od.ThoiGianOrder) BETWEEN 18 AND 20 THEN '18:00 - 20:59 (Tối / Peak 2)'
-                        ELSE '21:00 - 23:59 (Đêm muộn)'
-                    END
-            )
-            SELECT 
-                KhungGio,
-                SoLuongOrder,
-                TongDoanhThu,
-                ROUND(100.0 * TongDoanhThu / NULLIF(SUM(TongDoanhThu) OVER(), 0), 2) AS TyTrongDoanhThu_PhanTram,
-                DENSE_RANK() OVER (ORDER BY SoLuongOrder DESC) AS XepHangLuongKhach,
-                DENSE_RANK() OVER (ORDER BY TongDoanhThu DESC) AS XepHangDoanhThu
-            FROM KhungGioData
-            ORDER BY XepHangDoanhThu ASC;
-        """
-    }
-}
-
-@app.get("/api/reports", tags=["Reports"])
-def list_reports():
-    """Lấy danh sách các câu truy vấn có sẵn"""
-    return [
-        {"cau": k, "title": v["title"], "desc": v["desc"]}
-        for k, v in QUERIES_META.items()
-    ]
-
-@app.get("/api/reports/{cau_so}", tags=["Reports"])
-def run_report(cau_so: int):
-    """Chạy trực tiếp câu truy vấn BTL và trả kết quả kèm SQL text"""
-    if cau_so not in QUERIES_META:
-        raise HTTPException(status_code=404, detail="Không tìm thấy câu truy vấn này!")
-    
-    meta = QUERIES_META[cau_so]
-    data = execute_query(meta["sql"])
-    return {
-        "cau": cau_so,
-        "title": meta["title"],
-        "desc": meta["desc"],
-        "sql": meta["sql"].strip(),
-        "total_records": len(data) if data else 0,
-        "data": data
-    }
-
-@app.get("/api/reports/{cau_so}/export-csv", tags=["Reports"])
-def export_report_csv(cau_so: int):
-    """Xuất kết quả câu truy vấn ra file CSV có UTF-8 BOM chuẩn cho Excel"""
-    if cau_so not in QUERIES_META:
-        raise HTTPException(status_code=404, detail="Không tìm thấy câu truy vấn này!")
-    
-    meta = QUERIES_META[cau_so]
-    data = execute_query(meta["sql"])
-    if not data:
-        raise HTTPException(status_code=404, detail="Không có dữ liệu để xuất!")
-
-    output = io.StringIO()
-    # Ghi UTF-8 BOM để Excel hiển thị tiếng Việt có dấu chuẩn xác
-    output.write('\ufeff')
-    writer = csv.DictWriter(output, fieldnames=list(data[0].keys()))
-    writer.writeheader()
-    writer.writerows(data)
-
-    csv_data = output.getvalue().encode('utf-8-sig')
-    return Response(
-        content=csv_data,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=BTL_SQL_Cau_{cau_so}.csv"}
-    )
-
-# =====================================================================
-# 5. PHỤC VỤ GIAO DIỆN WEB FRONTEND
-# =====================================================================
 
 # Đảm bảo các thư mục static và templates tồn tại
 os.makedirs("static/css", exist_ok=True)

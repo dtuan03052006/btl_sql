@@ -129,21 +129,6 @@
         </nav>
       </div>
 
-      <!-- Nhóm: Báo cáo BTL SQL -->
-      <div>
-        <p class="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Báo cáo & Phân tích</p>
-        <nav class="space-y-1">
-          <button onclick="switchView('reports')" id="nav-reports" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="database-zap" class="w-4 h-4 text-amber-400"></i>
-            <span>8 Truy vấn SQL (BTL)</span>
-          </button>
-          <a href="/docs" target="_blank" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="code" class="w-4 h-4 text-sky-400"></i>
-            <span>Swagger API Docs</span>
-          </a>
-        </nav>
-      </div>
-
     </div>
 
     <!-- Sidebar Footer -->
@@ -235,10 +220,10 @@
             </div>
           </div>
 
-          <!-- Card 4: Doanh thu tháng 10 -->
+          <!-- Card 4: Tổng doanh thu -->
           <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-500 uppercase">Doanh thu tháng 10</p>
+              <p id="stat-doanh-thu-label" class="text-xs font-semibold text-slate-500 uppercase">Tổng Doanh Thu</p>
               <h3 id="stat-doanh-thu" class="text-2xl font-bold text-blue-700 mt-1 font-mono-num">0 đ</h3>
               <p class="text-xs text-slate-400 mt-1">từ <span id="stat-tong-hoadon" class="font-semibold text-slate-700">0</span> hóa đơn thanh toán</p>
             </div>
@@ -399,17 +384,60 @@
       <!-- VIEW 4: HÓA ĐƠN & THU NGÂN -->
       <!-- ===================================================== -->
       <div id="view-hoadon" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
               <i data-lucide="receipt" class="w-5 h-5 text-blue-600"></i>
-              Quản lý Hóa đơn & Thanh toán
+              Quầy Thu ngân & Quản lý Hóa đơn
             </h2>
-            <p class="text-xs text-slate-500 mt-1">Danh sách chứng từ thanh toán đã xuất, tuân thủ ràng buộc UNIQUE (MaHoaDon, MaMonAn).</p>
+            <p class="text-xs text-slate-500 mt-1">Danh sách đơn order đang chờ thu tiền và lưu trữ chứng từ thanh toán đã xuất.</p>
+          </div>
+          <!-- Tab Switcher -->
+          <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+            <button onclick="switchHoadonTab('pending')" id="tab-btn-pending" class="px-3.5 py-1.5 rounded-lg bg-white text-blue-600 shadow-sm transition-base flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+              <span>Chờ thanh toán</span>
+              <span id="badge-pending-count" class="px-1.5 py-0.5 rounded-full text-[10px] bg-red-100 text-red-700 font-bold">0</span>
+            </button>
+            <button onclick="switchHoadonTab('completed')" id="tab-btn-completed" class="px-3.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5">
+              <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+              <span>Hóa đơn đã thanh toán</span>
+            </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- BẢNG 1: ĐƠN CHỜ THANH TOÁN (PENDING ORDERS) -->
+        <div id="hoadon-tab-pending" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="px-5 py-3 bg-amber-50/50 border-b border-amber-100 flex items-center justify-between">
+            <div class="text-xs font-semibold text-amber-900 flex items-center gap-1.5">
+              <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+              <span>Danh sách các bàn đang phục vụ chờ thu ngân tính tiền</span>
+            </div>
+            <span class="text-[11px] text-amber-700 font-medium">Bấm "Thanh toán ngay" để mở bill và xuất hóa đơn</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
+                <tr>
+                  <th class="px-5 py-3.5">Mã Order</th>
+                  <th class="px-5 py-3.5">Bàn</th>
+                  <th class="px-5 py-3.5">Chi nhánh</th>
+                  <th class="px-5 py-3.5">Giờ vào</th>
+                  <th class="px-5 py-3.5 text-center">Khách</th>
+                  <th class="px-5 py-3.5 text-center">Món đã gọi</th>
+                  <th class="px-5 py-3.5 text-right">Tạm tính</th>
+                  <th class="px-5 py-3.5 text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="pending-orders-table-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BẢNG 2: HÓA ĐƠN ĐÃ THANH TOÁN (COMPLETED INVOICES) -->
+        <div id="hoadon-tab-completed" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
               <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
@@ -474,73 +502,7 @@
         </div>
       </div>
 
-      <!-- ===================================================== -->
-      <!-- VIEW 6: 8 TRUY VẤN SQL BÁO CÁO BTL -->
-      <!-- ===================================================== -->
-      <div id="view-reports" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="database-zap" class="w-5 h-5 text-amber-500"></i>
-                Hệ thống 8 Truy vấn dữ liệu (BTL SQL)
-              </h2>
-              <p class="text-xs text-slate-500 mt-1">Chạy trực tiếp trên MySQL Server, hiển thị kết quả và hỗ trợ xuất file CSV kèm UTF-8 BOM cho Excel.</p>
-            </div>
-          </div>
 
-          <!-- Query Tab Buttons (1 to 8) -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-5">
-            <button onclick="loadReportQuery(1)" id="btn-query-1" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 1<br><span class="text-[10px] font-normal text-slate-400">Cơ bản</span></button>
-            <button onclick="loadReportQuery(2)" id="btn-query-2" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 2<br><span class="text-[10px] font-normal text-slate-400">Inner Join</span></button>
-            <button onclick="loadReportQuery(3)" id="btn-query-3" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 3<br><span class="text-[10px] font-normal text-slate-400">Group By</span></button>
-            <button onclick="loadReportQuery(4)" id="btn-query-4" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 4<br><span class="text-[10px] font-normal text-slate-400">Having</span></button>
-            <button onclick="loadReportQuery(5)" id="btn-query-5" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 5<br><span class="text-[10px] font-normal text-slate-400">Outer Join</span></button>
-            <button onclick="loadReportQuery(6)" id="btn-query-6" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 6<br><span class="text-[10px] font-normal text-slate-400">Correlated</span></button>
-            <button onclick="loadReportQuery(7)" id="btn-query-7" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 7<br><span class="text-[10px] font-normal text-slate-400">Subquery</span></button>
-            <button onclick="loadReportQuery(8)" id="btn-query-8" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 8<br><span class="text-[10px] font-normal text-slate-400">Window Func</span></button>
-          </div>
-        </div>
-
-        <!-- Query Execution Details Box -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div>
-              <h3 id="report-title" class="text-base font-bold text-slate-900">Tiêu đề câu truy vấn</h3>
-              <p id="report-desc" class="text-xs text-slate-500 mt-0.5">Mô tả yêu cầu bài toán</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <a id="btn-export-csv" href="#" download class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-base">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>Xuất file CSV</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Code Box -->
-          <div class="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto relative">
-            <pre id="report-sql-text">-- Mã SQL sẽ hiện tại đây</pre>
-          </div>
-
-          <!-- Query Result Table -->
-          <div class="rounded-lg border border-slate-200 overflow-hidden mt-4">
-            <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>Kết quả trả về từ MySQL</span>
-              <span id="report-record-count" class="font-semibold text-slate-700">0 dòng dữ liệu</span>
-            </div>
-            <div class="overflow-x-auto max-h-[400px]">
-              <table class="w-full text-left text-sm">
-                <thead id="report-table-head" class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase sticky top-0 border-b border-slate-100">
-                  <!-- Header JS -->
-                </thead>
-                <tbody id="report-table-body" class="divide-y divide-slate-100 text-slate-700">
-                  <!-- Rows JS -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </main>
   </div>
@@ -605,7 +567,7 @@
       <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
         <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
           <i data-lucide="receipt" class="w-5 h-5 text-emerald-600"></i>
-          <span>Thanh toán Hóa đơn</span>
+          <span id="checkout-modal-title">Thanh toán Hóa đơn</span>
         </h3>
         <button onclick="closeModal('modal-checkout')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
@@ -636,7 +598,8 @@
           <span id="checkout-total-amount" class="text-xl font-bold text-emerald-600 font-mono-num">0 đ</span>
         </div>
 
-        <div>
+        <!-- Khối chọn Phương thức thanh toán (chỉ hiện khi chưa thanh toán) -->
+        <div id="checkout-payment-section">
           <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức thanh toán:</label>
           <select id="checkout-payment-method" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
             <option value="TienMat">Tiền mặt</option>
@@ -645,11 +608,22 @@
             <option value="ViDienTu">Ví điện tử</option>
           </select>
         </div>
+
+        <!-- Khối huy hiệu Đã thanh toán (chỉ hiện khi xem chứng từ đã thanh toán) -->
+        <div id="checkout-paid-badge" class="hidden flex items-center justify-center p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl">
+          <span class="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            Chứng từ này đã được thanh toán và hoàn tất
+          </span>
+        </div>
       </div>
 
       <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
         <button onclick="closeModal('modal-checkout')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-base">Đóng</button>
-        <button onclick="confirmCheckout()" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-base">Xác nhận thanh toán</button>
+        <button id="btn-confirm-checkout" onclick="confirmCheckout()" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-base flex items-center gap-1.5">
+          <i data-lucide="check" class="w-4 h-4"></i>
+          <span>Xác nhận thanh toán</span>
+        </button>
       </div>
     </div>
   </div>

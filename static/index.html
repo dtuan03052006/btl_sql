@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RestaurantOS - Chuỗi Nhà hàng & Gọi món Real-time</title>
+  <title>RestaurantOS - Hệ Thống Quản Lý Vận Hành Chuỗi Nhà Hàng</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,16 +13,29 @@
       theme: {
         extend: {
           colors: {
-            primary: {
-              DEFAULT: '#1E40AF',
-              hover: '#1D4ED8',
-              light: '#EFF6FF',
-              dark: '#1E3A8A'
+            brand: {
+              50: '#F8FAFC',
+              100: '#F1F5F9',
+              200: '#E2E8F0',
+              300: '#CBD5E1',
+              400: '#94A3B8',
+              500: '#64748B',
+              600: '#475569',
+              700: '#334155',
+              800: '#1E293B',
+              900: '#0F172A',
+              950: '#0B132B'
             },
-            secondary: '#3B82F6',
-            accent: '#D97706',
-            surface: '#FFFFFF',
-            sidebar: '#0F172A',
+            accent: {
+              DEFAULT: '#2563EB',
+              hover: '#1D4ED8',
+              subtle: '#EFF6FF'
+            }
+          },
+          boxShadow: {
+            '2xs': '0 1px 2px rgba(15, 23, 42, 0.04)',
+            'xs': '0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04)',
+            'subtle': '0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03)'
           }
         }
       }
@@ -36,123 +49,108 @@
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-slate-50 text-slate-800 antialiased flex h-screen overflow-hidden">
+<body class="bg-slate-50 text-slate-900 antialiased flex h-screen overflow-hidden selection:bg-slate-200 selection:text-slate-900">
 
   <!-- ===================================================================== -->
-  <!-- SIDEBAR NAVIGATION -->
+  <!-- SIDEBAR NAVIGATION (ENTERPRISE SLATE NAVY) -->
   <!-- ===================================================================== -->
-  <aside id="sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-30 transition-all duration-300">
+  <aside id="sidebar" class="w-64 bg-[#0B132B] text-slate-300 flex flex-col flex-shrink-0 z-30 border-r border-slate-800/80 transition-all duration-200">
     <!-- Brand Header -->
-    <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-slate-950/40">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-          <i data-lucide="utensils" class="w-5 h-5"></i>
+    <div class="h-14 flex items-center justify-between px-4 border-b border-slate-800/80 bg-[#070D1F]">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded bg-slate-800 border border-slate-700/80 flex items-center justify-center text-slate-200 shadow-2xs">
+          <i data-lucide="chef-hat" class="w-4 h-4"></i>
         </div>
         <div>
-          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-            RestaurantOS
-            <span class="w-2 h-2 rounded-full bg-emerald-500 live-indicator"></span>
-          </h1>
-          <p class="text-[11px] text-slate-400 font-medium">BTL Cơ sở dữ liệu SQL</p>
+          <div class="flex items-center gap-1.5 leading-none">
+            <span class="text-sm font-semibold tracking-tight text-white font-mono">RestaurantOS</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 live-indicator"></span>
+          </div>
+          <p class="text-[10px] text-slate-400 font-medium tracking-normal mt-0.5">Enterprise F&B Platform</p>
         </div>
       </div>
     </div>
 
-    <!-- Nav List -->
-    <div class="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+    <!-- Navigation Menu Items -->
+    <div class="flex-1 overflow-y-auto px-2.5 py-4 space-y-6">
       
-      <!-- Nhóm: Vận hành trực tiếp -->
+      <!-- Group 1: Vận hành trực tiếp -->
       <div>
-        <p class="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Vận hành Real-time</p>
-        <nav class="space-y-1">
-          <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white bg-blue-600/90 shadow-sm transition-base">
-            <i data-lucide="layout-dashboard" class="w-4 h-4 text-white"></i>
-            <span>Tổng quan (Dashboard)</span>
+        <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Vận hành Real-time</p>
+        <nav class="space-y-0.5">
+          <button onclick="switchView('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-semibold text-white bg-slate-800 shadow-2xs transition-base">
+            <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>
+            <span class="truncate">Tổng quan (Dashboard)</span>
           </button>
           
-          <button onclick="switchView('floorplan')" id="nav-floorplan" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="grid" class="w-4 h-4 text-emerald-400"></i>
-            <span>Sơ đồ bàn ăn</span>
+          <button onclick="switchView('floorplan')" id="nav-floorplan" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="layout-grid" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Sơ đồ bàn ăn</span>
           </button>
 
-          <button onclick="switchView('kitchen')" id="nav-kitchen" class="nav-item w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <div class="flex items-center gap-3">
-              <i data-lucide="flame" class="w-4 h-4 text-amber-400"></i>
-              <span>Màn hình Bếp / Bar</span>
+          <button onclick="switchView('kitchen')" id="nav-kitchen" class="nav-item w-full flex items-center justify-between px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <div class="flex items-center gap-2.5 truncate">
+              <i data-lucide="flame" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+              <span class="truncate">Màn hình Bếp / Bar</span>
             </div>
-            <span id="badge-kitchen-count" class="px-2 py-0.5 text-xs font-semibold rounded-full bg-amber-500/20 text-amber-300">0</span>
+            <span id="badge-kitchen-count" class="px-1.5 py-0.5 text-[10px] font-bold rounded bg-slate-800 border border-slate-700 text-slate-200">0</span>
           </button>
 
-          <button onclick="switchView('hoadon')" id="nav-hoadon" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="receipt" class="w-4 h-4 text-blue-400"></i>
-            <span>Hóa đơn & Thu ngân</span>
+          <button onclick="switchView('hoadon')" id="nav-hoadon" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="receipt" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Hóa đơn & Thu ngân</span>
           </button>
         </nav>
       </div>
 
-      <!-- Nhóm: Quản lý dữ liệu (12 Bảng) -->
+      <!-- Group 2: Quản trị CSDL (12 Bảng) -->
       <div>
-        <p class="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Quản trị CSDL (12 Bảng)</p>
-        <nav class="space-y-1">
-          <button onclick="openCrud('chinhanh')" id="nav-crud-chinhanh" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="building-2" class="w-4 h-4 text-sky-400"></i>
-            <span>Chi nhánh</span>
+        <p class="px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Quản trị CSDL</p>
+        <nav class="space-y-0.5">
+          <button onclick="openCrud('chinhanh')" id="nav-crud-chinhanh" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="building" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Chi nhánh</span>
           </button>
-          <button onclick="openCrud('banan')" id="nav-crud-banan" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="table-2" class="w-4 h-4 text-indigo-400"></i>
-            <span>Bàn ăn</span>
+          <button onclick="openCrud('banan')" id="nav-crud-banan" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="table" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Bàn ăn</span>
           </button>
-          <button onclick="openCrud('nhomthucdon')" id="nav-crud-nhomthucdon" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="layers" class="w-4 h-4 text-teal-400"></i>
-            <span>Nhóm thực đơn</span>
+          <button onclick="openCrud('nhomthucdon')" id="nav-crud-nhomthucdon" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="folder-tree" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Nhóm thực đơn</span>
           </button>
-          <button onclick="openCrud('monan')" id="nav-crud-monan" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="soup" class="w-4 h-4 text-orange-400"></i>
-            <span>Món ăn (Menu)</span>
+          <button onclick="openCrud('monan')" id="nav-crud-monan" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="utensils-crossed" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Món ăn (Menu)</span>
           </button>
-          <button onclick="openCrud('nguyenlieu')" id="nav-crud-nguyenlieu" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="wheat" class="w-4 h-4 text-yellow-400"></i>
-            <span>Nguyên liệu</span>
+          <button onclick="openCrud('nguyenlieu')" id="nav-crud-nguyenlieu" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="package" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Nguyên liệu</span>
           </button>
-          <button onclick="openCrud('khonguyenlieu')" id="nav-crud-khonguyenlieu" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="boxes" class="w-4 h-4 text-purple-400"></i>
-            <span>Kho nguyên liệu</span>
+          <button onclick="openCrud('khonguyenlieu')" id="nav-crud-khonguyenlieu" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="warehouse" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Kho nguyên liệu</span>
           </button>
-          <button onclick="openCrud('dinhluongmon')" id="nav-crud-dinhluongmon" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="scale" class="w-4 h-4 text-rose-400"></i>
-            <span>Định lượng món (BOM)</span>
+          <button onclick="openCrud('dinhluongmon')" id="nav-crud-dinhluongmon" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="scale" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Định lượng món (BOM)</span>
           </button>
-          <button onclick="openCrud('datban')" id="nav-crud-datban" class="nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="calendar-check-2" class="w-4 h-4 text-cyan-400"></i>
-            <span>Đặt bàn trước</span>
+          <button onclick="openCrud('datban')" id="nav-crud-datban" class="nav-item w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/60 transition-base">
+            <i data-lucide="calendar" class="w-4 h-4 text-slate-400 flex-shrink-0"></i>
+            <span class="truncate">Đặt bàn trước</span>
           </button>
-        </nav>
-      </div>
-
-      <!-- Nhóm: Báo cáo BTL SQL -->
-      <div>
-        <p class="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Báo cáo & Phân tích</p>
-        <nav class="space-y-1">
-          <button onclick="switchView('reports')" id="nav-reports" class="nav-item w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="database-zap" class="w-4 h-4 text-amber-400"></i>
-            <span>8 Truy vấn SQL (BTL)</span>
-          </button>
-          <a href="/docs" target="_blank" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-slate-400 hover:text-white hover:bg-slate-800/60 transition-base">
-            <i data-lucide="code" class="w-4 h-4 text-sky-400"></i>
-            <span>Swagger API Docs</span>
-          </a>
         </nav>
       </div>
 
     </div>
 
     <!-- Sidebar Footer -->
-    <div class="p-3 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>MySQL 8.0 Connected</span>
+    <div class="px-3.5 py-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between bg-[#070D1F]">
+      <div class="flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span class="font-medium text-slate-300">MySQL 8.0</span>
       </div>
-      <span class="font-mono text-[10px] text-slate-500">v2.0</span>
+      <span class="font-mono text-[10px] text-slate-500 font-medium">v2.4 Pro</span>
     </div>
   </aside>
 
@@ -161,100 +159,101 @@
   <!-- ===================================================================== -->
   <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
     
-    <!-- Topbar -->
-    <header class="h-16 bg-white border-b border-slate-200 px-6 flex items-center justify-between z-20 shadow-sm">
-      <div class="flex items-center gap-4">
+    <!-- Topbar (White Surface, Crisp Border) -->
+    <header class="h-14 bg-white border-b border-slate-200/90 px-6 flex items-center justify-between z-20 flex-shrink-0">
+      <div class="flex items-center gap-3">
         <!-- Branch Selector Filter -->
-        <div class="flex items-center gap-2 bg-slate-100 rounded-lg px-3 py-1.5 border border-slate-200">
-          <i data-lucide="map-pin" class="w-4 h-4 text-blue-600"></i>
+        <div class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100/70 rounded-md px-3 py-1.5 border border-slate-200 transition-colors">
+          <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-500"></i>
           <span class="text-xs font-medium text-slate-500">Chi nhánh:</span>
-          <select id="global-branch-select" onchange="onGlobalBranchChange()" class="bg-transparent text-sm font-semibold text-slate-800 focus:outline-none cursor-pointer">
+          <select id="global-branch-select" onchange="onGlobalBranchChange()" class="bg-transparent text-xs font-semibold text-slate-900 focus:outline-none cursor-pointer pr-1">
             <option value="ALL">Toàn hệ thống (Tất cả chi nhánh)</option>
           </select>
         </div>
       </div>
 
       <!-- Right Header Actions -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <!-- Live Clock -->
-        <div class="hidden sm:flex items-center gap-2 text-xs font-mono-num text-slate-500 bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 whitespace-nowrap flex-shrink-0">
-          <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-400"></i>
+        <div class="hidden sm:flex items-center gap-1.5 text-xs font-mono-num text-slate-500 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-200">
+          <i data-lucide="clock" class="w-3 h-3 text-slate-400"></i>
           <span id="live-clock">--:--:--</span>
         </div>
 
-        <!-- Quick Call to Action -->
-        <button onclick="openQuickOrderModal()" class="flex items-center gap-2 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium shadow-sm transition-base">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        <!-- Quick CTA: Tạo Order tại bàn -->
+        <button onclick="openQuickOrderModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium shadow-2xs transition-base">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
           <span>Tạo Order tại bàn</span>
         </button>
       </div>
     </header>
 
-    <!-- Main Dynamic Content Views -->
+    <!-- Main Content Area -->
     <main class="flex-1 overflow-y-auto p-6 bg-slate-50">
       
       <!-- ===================================================== -->
       <!-- VIEW 1: DASHBOARD -->
       <!-- ===================================================== -->
       <div id="view-dashboard" class="space-y-6">
-        <!-- Top Metrics Cards -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          <!-- Card 1: Bàn hoạt động -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+        
+        <!-- Metrics Strip (4 Clean Enterprise Cards) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Card 1: Bàn đang phục vụ -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-500 uppercase">Bàn đang phục vụ</p>
-              <h3 id="stat-ban-active" class="text-2xl font-bold text-slate-900 mt-1 font-mono-num">0</h3>
-              <p class="text-xs text-slate-400 mt-1">trên tổng <span id="stat-ban-total" class="font-semibold text-slate-700">0</span> bàn ăn</p>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Bàn đang phục vụ</p>
+              <h3 id="stat-ban-active" class="text-2xl font-bold text-slate-900 mt-1 font-mono-num tracking-tight">0</h3>
+              <p class="text-xs text-slate-500 mt-0.5">trên tổng <span id="stat-ban-total" class="font-semibold text-slate-800">0</span> bàn ăn</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center">
-              <i data-lucide="utensils" class="w-6 h-6"></i>
+            <div class="w-10 h-10 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center">
+              <i data-lucide="utensils" class="w-5 h-5"></i>
             </div>
           </div>
 
-          <!-- Card 2: Bàn trống -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <!-- Card 2: Bàn sẵn sàng -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-500 uppercase">Bàn sẵn sàng</p>
-              <h3 id="stat-ban-empty" class="text-2xl font-bold text-emerald-600 mt-1 font-mono-num">0</h3>
-              <p class="text-xs text-slate-400 mt-1"><span id="stat-ban-reserved" class="text-amber-600 font-semibold">0</span> bàn đã đặt trước</p>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Bàn sẵn sàng</p>
+              <h3 id="stat-ban-empty" class="text-2xl font-bold text-emerald-700 mt-1 font-mono-num tracking-tight">0</h3>
+              <p class="text-xs text-slate-500 mt-0.5"><span id="stat-ban-reserved" class="text-amber-700 font-semibold">0</span> bàn đã đặt trước</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <i data-lucide="check-circle-2" class="w-6 h-6"></i>
+            <div class="w-10 h-10 rounded-md bg-emerald-50 text-emerald-700 flex items-center justify-center">
+              <i data-lucide="check-circle-2" class="w-5 h-5"></i>
             </div>
           </div>
 
-          <!-- Card 3: Đơn chờ Bếp/Bar -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <!-- Card 3: Món chờ chế biến -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-500 uppercase">Món chờ chế biến</p>
-              <h3 id="stat-kitchen-pending" class="text-2xl font-bold text-amber-600 mt-1 font-mono-num">0</h3>
-              <p class="text-xs text-slate-400 mt-1">cần xử lý tại Bếp & Bar</p>
+              <p class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Món chờ chế biến</p>
+              <h3 id="stat-kitchen-pending" class="text-2xl font-bold text-amber-700 mt-1 font-mono-num tracking-tight">0</h3>
+              <p class="text-xs text-slate-500 mt-0.5">cần xử lý tại Bếp & Bar</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <i data-lucide="flame" class="w-6 h-6"></i>
+            <div class="w-10 h-10 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center">
+              <i data-lucide="flame" class="w-5 h-5"></i>
             </div>
           </div>
 
-          <!-- Card 4: Doanh thu tháng 10 -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <!-- Card 4: Doanh thu -->
+          <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
             <div>
-              <p class="text-xs font-semibold text-slate-500 uppercase">Doanh thu tháng 10</p>
-              <h3 id="stat-doanh-thu" class="text-2xl font-bold text-blue-700 mt-1 font-mono-num">0 đ</h3>
-              <p class="text-xs text-slate-400 mt-1">từ <span id="stat-tong-hoadon" class="font-semibold text-slate-700">0</span> hóa đơn thanh toán</p>
+              <p id="stat-doanh-thu-label" class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tổng Doanh Thu</p>
+              <h3 id="stat-doanh-thu" class="text-2xl font-bold text-slate-900 mt-1 font-mono-num tracking-tight">0 đ</h3>
+              <p class="text-xs text-slate-500 mt-0.5">từ <span id="stat-tong-hoadon" class="font-semibold text-slate-800">0</span> hóa đơn thanh toán</p>
             </div>
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <i data-lucide="badge-dollar-sign" class="w-6 h-6"></i>
+            <div class="w-10 h-10 rounded-md bg-slate-100 text-slate-700 flex items-center justify-center">
+              <i data-lucide="receipt" class="w-5 h-5"></i>
             </div>
           </div>
         </div>
 
         <!-- Charts Row -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Biểu đồ Doanh thu chi nhánh -->
-          <div class="lg:col-span-2 bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Bar Chart: Doanh thu -->
+          <div class="lg:col-span-2 bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
             <div class="flex items-center justify-between mb-4">
-              <h3 id="chart-revenue-title" class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="bar-chart-3" class="w-4 h-4 text-blue-600"></i>
+              <h3 id="chart-revenue-title" class="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-slate-500"></i>
                 Top 5 Chi nhánh có Doanh thu cao nhất
               </h3>
             </div>
@@ -263,10 +262,10 @@
             </div>
           </div>
 
-          <!-- Biểu đồ Trạng thái bàn -->
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center gap-2">
-              <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i>
+          <!-- Donut Chart: Trạng thái bàn -->
+          <div class="bg-white p-5 rounded-lg border border-slate-200 shadow-2xs">
+            <h3 class="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <i data-lucide="pie-chart" class="w-4 h-4 text-slate-500"></i>
               Tỷ lệ trạng thái Bàn ăn
             </h3>
             <div class="h-64 flex items-center justify-center">
@@ -275,27 +274,27 @@
           </div>
         </div>
 
-        <!-- Recent Tables & Best Sellers -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Tables Row: Recent Orders & Best Sellers -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <!-- Đơn gọi món gần nhất -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="clock-3" class="w-4 h-4 text-blue-600"></i>
+          <div class="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+              <h3 class="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="clock" class="w-3.5 h-3.5 text-slate-500"></i>
                 Đơn gọi món gần nhất (Real-time)
               </h3>
-              <button onclick="switchView('floorplan')" class="text-xs font-semibold text-blue-600 hover:underline">Xem sơ đồ bàn →</button>
+              <button onclick="switchView('floorplan')" class="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">Xem sơ đồ bàn →</button>
             </div>
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
+              <table class="w-full text-left text-xs enterprise-table">
+                <thead class="bg-slate-50/90 text-slate-500 text-[11px] font-semibold uppercase border-b border-slate-200">
                   <tr>
-                    <th class="px-4 py-3">Mã đơn</th>
-                    <th class="px-4 py-3">Bàn</th>
-                    <th class="px-4 py-3">Chi nhánh</th>
-                    <th class="px-4 py-3">Khách</th>
-                    <th class="px-4 py-3">Thời gian</th>
-                    <th class="px-4 py-3">Trạng thái</th>
+                    <th class="px-4 py-2.5">Mã đơn</th>
+                    <th class="px-4 py-2.5">Bàn</th>
+                    <th class="px-4 py-2.5">Chi nhánh</th>
+                    <th class="px-4 py-2.5 text-center">Khách</th>
+                    <th class="px-4 py-2.5">Thời gian</th>
+                    <th class="px-4 py-2.5 text-center">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody id="dashboard-recent-orders" class="divide-y divide-slate-100 text-slate-700">
@@ -306,21 +305,21 @@
           </div>
 
           <!-- Top món bán chạy -->
-          <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 id="best-seller-title" class="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="flame" class="w-4 h-4 text-orange-500"></i>
+          <div class="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
+            <div class="px-4 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/50">
+              <h3 id="best-seller-title" class="text-xs font-semibold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i data-lucide="award" class="w-3.5 h-3.5 text-slate-500"></i>
                 Món ăn bán chạy nhất toàn hệ thống
               </h3>
-              <button onclick="openCrud('monan')" class="text-xs font-semibold text-blue-600 hover:underline">Quản lý Menu →</button>
+              <button onclick="openCrud('monan')" class="text-xs font-medium text-slate-600 hover:text-slate-900 transition-colors">Quản lý Menu →</button>
             </div>
             <div class="overflow-x-auto">
-              <table class="w-full text-left text-sm">
-                <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
+              <table class="w-full text-left text-xs enterprise-table">
+                <thead class="bg-slate-50/90 text-slate-500 text-[11px] font-semibold uppercase border-b border-slate-200">
                   <tr>
-                    <th class="px-4 py-3">#</th>
-                    <th class="px-4 py-3">Tên món ăn</th>
-                    <th class="px-4 py-3 text-right">Số lượng bán ra</th>
+                    <th class="px-4 py-2.5">#</th>
+                    <th class="px-4 py-2.5">Tên món ăn</th>
+                    <th class="px-4 py-2.5 text-right">Số lượng bán ra</th>
                   </tr>
                 </thead>
                 <tbody id="dashboard-top-dishes" class="divide-y divide-slate-100 text-slate-700">
@@ -336,35 +335,35 @@
       <!-- ===================================================== -->
       <!-- VIEW 2: SƠ ĐỒ BÀN ĂN (FLOOR PLAN) -->
       <!-- ===================================================== -->
-      <div id="view-floorplan" class="space-y-6 hidden">
+      <div id="view-floorplan" class="space-y-5 hidden">
         <!-- Floor Header & Legend -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-2xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="grid" class="w-5 h-5 text-emerald-600"></i>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="layout-grid" class="w-4 h-4 text-slate-600"></i>
               Sơ đồ bàn ăn phục vụ
             </h2>
-            <p class="text-xs text-slate-500 mt-1">Cập nhật trạng thái thời gian thực. Bấm vào bàn để thao tác mở order hoặc tính tiền.</p>
+            <p class="text-xs text-slate-500 mt-0.5">Trạng thái thời gian thực. Bấm vào bàn để mở order, thêm món hoặc tính tiền.</p>
           </div>
           <!-- Legend -->
-          <div class="flex items-center gap-4 text-xs font-medium">
+          <div class="flex items-center gap-4 text-xs font-medium text-slate-600">
             <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
               <span>Bàn trống</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-red-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
               <span>Đang phục vụ</span>
             </div>
             <div class="flex items-center gap-1.5">
-              <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
               <span>Đã đặt trước</span>
             </div>
           </div>
         </div>
 
         <!-- Table Grid Container -->
-        <div id="floorplan-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+        <div id="floorplan-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5">
           <!-- Rendered dynamically via JS -->
         </div>
       </div>
@@ -372,25 +371,25 @@
       <!-- ===================================================== -->
       <!-- VIEW 3: MÀN HÌNH BẾP & BAR (KDS) -->
       <!-- ===================================================== -->
-      <div id="view-kitchen" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div id="view-kitchen" class="space-y-5 hidden">
+        <div class="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
-            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="flame" class="w-5 h-5 text-amber-500"></i>
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="flame" class="w-4 h-4 text-slate-700"></i>
               Màn hình Bếp & Bar (Kitchen Display System)
             </h2>
-            <p class="text-xs text-slate-500 mt-1">
-              Quy tắc Trigger: Khi bấm <span class="font-bold text-emerald-600">"Hoàn thành món"</span>, CSDL tự động trừ nguyên liệu tồn kho theo định lượng món ăn!
+            <p class="text-xs text-slate-500 mt-0.5">
+              Quy tắc Trigger: Khi bấm <span class="font-semibold text-emerald-700">"Hoàn thành món"</span>, hệ thống tự động trừ kho nguyên liệu theo định lượng!
             </p>
           </div>
-          <button onclick="loadKitchenData()" class="flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-blue-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-base">
-            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          <button onclick="loadKitchenData()" class="flex items-center gap-1 text-xs font-medium text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md shadow-2xs transition-base">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
             <span>Làm mới danh sách</span>
           </button>
         </div>
 
         <!-- Kitchen Orders Cards Grid -->
-        <div id="kitchen-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div id="kitchen-cards-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <!-- Rendered dynamically via JS -->
         </div>
       </div>
@@ -398,30 +397,73 @@
       <!-- ===================================================== -->
       <!-- VIEW 4: HÓA ĐƠN & THU NGÂN -->
       <!-- ===================================================== -->
-      <div id="view-hoadon" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+      <div id="view-hoadon" class="space-y-5 hidden">
+        <div class="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <i data-lucide="receipt" class="w-5 h-5 text-blue-600"></i>
-              Quản lý Hóa đơn & Thanh toán
+            <h2 class="text-base font-bold text-slate-900 flex items-center gap-2">
+              <i data-lucide="receipt" class="w-4 h-4 text-slate-700"></i>
+              Quầy Thu ngân & Quản lý Hóa đơn
             </h2>
-            <p class="text-xs text-slate-500 mt-1">Danh sách chứng từ thanh toán đã xuất, tuân thủ ràng buộc UNIQUE (MaHoaDon, MaMonAn).</p>
+            <p class="text-xs text-slate-500 mt-0.5">Danh sách các bàn đang phục vụ chờ thu tiền và lưu trữ chứng từ thanh toán.</p>
+          </div>
+          <!-- Tab Switcher -->
+          <div class="flex items-center bg-slate-100 p-0.5 rounded-md border border-slate-200/80 text-xs font-medium">
+            <button onclick="switchHoadonTab('pending')" id="tab-btn-pending" class="px-3 py-1.5 rounded bg-white text-slate-900 font-semibold shadow-2xs transition-base flex items-center gap-1.5">
+              <i data-lucide="clock" class="w-3 h-3 text-slate-500"></i>
+              <span>Chờ thanh toán</span>
+              <span id="badge-pending-count" class="px-1.5 py-0.2 rounded text-[10px] bg-rose-100 text-rose-700 font-bold font-mono">0</span>
+            </button>
+            <button onclick="switchHoadonTab('completed')" id="tab-btn-completed" class="px-3 py-1.5 rounded text-slate-600 hover:text-slate-900 transition-base flex items-center gap-1.5">
+              <i data-lucide="check" class="w-3 h-3 text-slate-500"></i>
+              <span>Hóa đơn đã thanh toán</span>
+            </button>
           </div>
         </div>
 
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <!-- BẢNG 1: ĐƠN CHỜ THANH TOÁN (PENDING ORDERS) -->
+        <div id="hoadon-tab-pending" class="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div class="text-xs font-medium text-slate-600 flex items-center gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 text-slate-400"></i>
+              <span>Danh sách các bàn đang phục vụ cần tính tiền tại quầy</span>
+            </div>
+            <span class="text-[11px] text-slate-500">Bấm "Thanh toán ngay" để mở bill và xuất hóa đơn</span>
+          </div>
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
+            <table class="w-full text-left text-xs enterprise-table">
+              <thead class="bg-slate-50/90 text-slate-500 text-[11px] font-semibold uppercase border-b border-slate-200">
                 <tr>
-                  <th class="px-5 py-3.5">Mã Hóa Đơn</th>
-                  <th class="px-5 py-3.5">Mã Order</th>
-                  <th class="px-5 py-3.5">Chi nhánh</th>
-                  <th class="px-5 py-3.5">Bàn</th>
-                  <th class="px-5 py-3.5">Thời gian lập</th>
-                  <th class="px-5 py-3.5 text-right">Tổng tiền</th>
-                  <th class="px-5 py-3.5">Phương thức</th>
-                  <th class="px-5 py-3.5 text-center">Thao tác</th>
+                  <th class="px-4 py-2.5">Mã Order</th>
+                  <th class="px-4 py-2.5">Bàn</th>
+                  <th class="px-4 py-2.5">Chi nhánh</th>
+                  <th class="px-4 py-2.5">Giờ vào</th>
+                  <th class="px-4 py-2.5 text-center">Khách</th>
+                  <th class="px-4 py-2.5 text-center">Món đã gọi</th>
+                  <th class="px-4 py-2.5 text-right">Tạm tính</th>
+                  <th class="px-4 py-2.5 text-center">Thao tác</th>
+                </tr>
+              </thead>
+              <tbody id="pending-orders-table-body" class="divide-y divide-slate-100 text-slate-700">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BẢNG 2: HÓA ĐƠN ĐÃ THANH TOÁN (COMPLETED INVOICES) -->
+        <div id="hoadon-tab-completed" class="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs enterprise-table">
+              <thead class="bg-slate-50/90 text-slate-500 text-[11px] font-semibold uppercase border-b border-slate-200">
+                <tr>
+                  <th class="px-4 py-2.5">Mã Hóa Đơn</th>
+                  <th class="px-4 py-2.5">Mã Order</th>
+                  <th class="px-4 py-2.5">Chi nhánh</th>
+                  <th class="px-4 py-2.5">Bàn</th>
+                  <th class="px-4 py-2.5">Thời gian lập</th>
+                  <th class="px-4 py-2.5 text-right">Tổng tiền</th>
+                  <th class="px-4 py-2.5">Phương thức</th>
+                  <th class="px-4 py-2.5 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody id="hoadon-table-body" class="divide-y divide-slate-100 text-slate-700">
@@ -435,31 +477,37 @@
       <!-- ===================================================== -->
       <!-- VIEW 5: QUẢN TRỊ DỮ LIỆU ĐA NĂNG (GENERIC CRUD) -->
       <!-- ===================================================== -->
-      <div id="view-crud" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div id="view-crud" class="space-y-5 hidden">
+        <!-- Page Header Toolbar -->
+        <div class="bg-white px-5 py-4 rounded-lg border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 id="crud-entity-title" class="text-lg font-bold text-slate-900 flex items-center gap-2">
-              Quản lý bảng
-            </h2>
-            <p id="crud-entity-desc" class="text-xs text-slate-500 mt-1">Thêm, sửa, xóa, lọc và phân trang dữ liệu theo chuẩn ràng buộc CSDL.</p>
-          </div>
-          <div class="flex items-center gap-3">
-            <div class="relative">
-              <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-              <input id="crud-search-input" oninput="onCrudSearch()" type="text" placeholder="Tìm kiếm nhanh..." class="pl-9 pr-4 py-1.5 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 w-48 sm:w-64">
+            <div class="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-0.5">
+              <span>Hệ thống</span>
+              <span>/</span>
+              <span>Quản trị CSDL</span>
             </div>
-            <button onclick="openCreateModal()" class="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-base">
-              <i data-lucide="plus" class="w-4 h-4"></i>
+            <h2 id="crud-entity-title" class="text-lg font-bold text-slate-900 tracking-tight">
+              Quản lý Chi nhánh
+            </h2>
+            <p id="crud-entity-desc" class="text-xs text-slate-500 mt-0.5">Thêm, sửa, xóa, tìm kiếm và phân trang dữ liệu theo chuẩn ràng buộc CSDL.</p>
+          </div>
+          <div class="flex items-center gap-2.5">
+            <div class="relative">
+              <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+              <input id="crud-search-input" oninput="onCrudSearch()" type="text" placeholder="Tìm kiếm nhanh..." class="pl-8 pr-3 py-1.5 text-xs rounded-md border border-slate-200 bg-white placeholder:text-slate-400 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 w-52 sm:w-64 transition-colors">
+            </div>
+            <button onclick="openCreateModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-md text-xs font-medium shadow-2xs transition-base">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i>
               <span>Thêm mới</span>
             </button>
           </div>
         </div>
 
         <!-- Dynamic CRUD Data Table -->
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="overflow-x-auto min-h-[300px]">
-            <table class="w-full text-left text-sm">
-              <thead id="crud-table-head" class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase border-b border-slate-100">
+        <div class="bg-white rounded-lg border border-slate-200 shadow-2xs overflow-hidden">
+          <div class="overflow-x-auto min-h-[320px]">
+            <table class="w-full text-left text-xs enterprise-table">
+              <thead id="crud-table-head" class="bg-slate-50/90 text-slate-500 text-[11px] font-semibold uppercase border-b border-slate-200">
                 <!-- Dynamic Header -->
               </thead>
               <tbody id="crud-table-body" class="divide-y divide-slate-100 text-slate-700">
@@ -468,75 +516,12 @@
             </table>
           </div>
           <!-- Pagination Bar -->
-          <div class="px-5 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
-            <div>Hiển thị <span id="crud-page-count" class="font-semibold text-slate-700">0</span> bản ghi</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ===================================================== -->
-      <!-- VIEW 6: 8 TRUY VẤN SQL BÁO CÁO BTL -->
-      <!-- ===================================================== -->
-      <div id="view-reports" class="space-y-6 hidden">
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <i data-lucide="database-zap" class="w-5 h-5 text-amber-500"></i>
-                Hệ thống 8 Truy vấn dữ liệu (BTL SQL)
-              </h2>
-              <p class="text-xs text-slate-500 mt-1">Chạy trực tiếp trên MySQL Server, hiển thị kết quả và hỗ trợ xuất file CSV kèm UTF-8 BOM cho Excel.</p>
-            </div>
-          </div>
-
-          <!-- Query Tab Buttons (1 to 8) -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mt-5">
-            <button onclick="loadReportQuery(1)" id="btn-query-1" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 1<br><span class="text-[10px] font-normal text-slate-400">Cơ bản</span></button>
-            <button onclick="loadReportQuery(2)" id="btn-query-2" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 2<br><span class="text-[10px] font-normal text-slate-400">Inner Join</span></button>
-            <button onclick="loadReportQuery(3)" id="btn-query-3" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 3<br><span class="text-[10px] font-normal text-slate-400">Group By</span></button>
-            <button onclick="loadReportQuery(4)" id="btn-query-4" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 4<br><span class="text-[10px] font-normal text-slate-400">Having</span></button>
-            <button onclick="loadReportQuery(5)" id="btn-query-5" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 5<br><span class="text-[10px] font-normal text-slate-400">Outer Join</span></button>
-            <button onclick="loadReportQuery(6)" id="btn-query-6" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 6<br><span class="text-[10px] font-normal text-slate-400">Correlated</span></button>
-            <button onclick="loadReportQuery(7)" id="btn-query-7" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 7<br><span class="text-[10px] font-normal text-slate-400">Subquery</span></button>
-            <button onclick="loadReportQuery(8)" id="btn-query-8" class="report-tab px-3 py-2 text-xs font-semibold rounded-lg border border-slate-200 hover:border-blue-500 hover:text-blue-600 transition-base text-center">Câu 8<br><span class="text-[10px] font-normal text-slate-400">Window Func</span></button>
-          </div>
-        </div>
-
-        <!-- Query Execution Details Box -->
-        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-            <div>
-              <h3 id="report-title" class="text-base font-bold text-slate-900">Tiêu đề câu truy vấn</h3>
-              <p id="report-desc" class="text-xs text-slate-500 mt-0.5">Mô tả yêu cầu bài toán</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <a id="btn-export-csv" href="#" download class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-base">
-                <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                <span>Xuất file CSV</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Code Box -->
-          <div class="bg-slate-900 text-slate-200 p-4 rounded-lg font-mono text-xs overflow-x-auto relative">
-            <pre id="report-sql-text">-- Mã SQL sẽ hiện tại đây</pre>
-          </div>
-
-          <!-- Query Result Table -->
-          <div class="rounded-lg border border-slate-200 overflow-hidden mt-4">
-            <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs text-slate-500 font-medium">
-              <span>Kết quả trả về từ MySQL</span>
-              <span id="report-record-count" class="font-semibold text-slate-700">0 dòng dữ liệu</span>
-            </div>
-            <div class="overflow-x-auto max-h-[400px]">
-              <table class="w-full text-left text-sm">
-                <thead id="report-table-head" class="bg-slate-50 text-slate-500 text-xs font-semibold uppercase sticky top-0 border-b border-slate-100">
-                  <!-- Header JS -->
-                </thead>
-                <tbody id="report-table-body" class="divide-y divide-slate-100 text-slate-700">
-                  <!-- Rows JS -->
-                </tbody>
-              </table>
+          <div class="px-4 py-2.5 border-t border-slate-200 bg-slate-50/60 flex items-center justify-between text-xs text-slate-500">
+            <div>Hiển thị <span id="crud-page-count" class="font-semibold text-slate-900 font-mono">0</span> bản ghi</div>
+            <div class="flex items-center gap-1">
+              <button disabled class="px-2 py-1 border border-slate-200 rounded text-slate-400 bg-white cursor-not-allowed">Trước</button>
+              <span class="px-2 py-1 text-slate-700 font-semibold font-mono">1</span>
+              <button disabled class="px-2 py-1 border border-slate-200 rounded text-slate-400 bg-white cursor-not-allowed">Sau</button>
             </div>
           </div>
         </div>
@@ -551,49 +536,49 @@
 
   <!-- Modal 1: Gọi món tại bàn (Order Modal) -->
   <div id="modal-order" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+    <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden animate-modal-in">
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
         <div class="flex items-center gap-2">
-          <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i>
-          <h3 class="text-base font-bold text-slate-900">Mở Bàn & Gọi món Real-time</h3>
-          <span id="order-modal-branch-badge" class="ml-2 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 border border-blue-200"></span>
+          <i data-lucide="plus-circle" class="w-4 h-4 text-slate-700"></i>
+          <h3 class="text-sm font-bold text-slate-900">Mở Bàn & Gọi món Real-time</h3>
+          <span id="order-modal-branch-badge" class="ml-1.5 px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200"></span>
         </div>
-        <button onclick="closeModal('modal-order')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-order')" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
       
-      <div class="p-6 overflow-y-auto space-y-5 flex-1">
-        <div class="grid grid-cols-2 gap-4">
+      <div class="p-5 overflow-y-auto space-y-4 flex-1">
+        <div class="grid grid-cols-2 gap-3.5">
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Chọn bàn ăn:</label>
-            <select id="order-table-select" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <select id="order-table-select" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:outline-none bg-white">
               <!-- Rendered options -->
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-700 mb-1">Số lượng khách:</label>
-            <input id="order-guests-input" type="number" min="1" value="4" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            <input id="order-guests-input" type="number" min="1" value="4" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:outline-none">
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-2">Chọn món ăn từ Menu:</label>
-          <div id="order-menu-items" class="space-y-2 max-h-64 overflow-y-auto border border-slate-100 p-2 rounded-lg">
+          <label class="block text-xs font-semibold text-slate-700 mb-1.5">Chọn món ăn từ Menu:</label>
+          <div id="order-menu-items" class="space-y-1.5 max-h-60 overflow-y-auto border border-slate-200 p-2 rounded-md bg-slate-50/40">
             <!-- Dishes list with + / - buttons -->
           </div>
         </div>
 
         <!-- Trigger Highlight Note -->
-        <div class="p-3 bg-blue-50/70 border border-blue-200/60 rounded-lg text-xs text-blue-800 flex items-start gap-2">
-          <i data-lucide="zap" class="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"></i>
+        <div class="p-2.5 bg-slate-50 border border-slate-200 rounded-md text-xs text-slate-600 flex items-start gap-2">
+          <i data-lucide="zap" class="w-3.5 h-3.5 text-slate-500 flex-shrink-0 mt-0.5"></i>
           <span>Khi gửi order: <strong>Trigger 1</strong> sẽ tự động đổi trạng thái bàn sang <code>'DangPhucVu'</code> và gửi món đến màn hình Bếp.</span>
         </div>
       </div>
 
-      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-        <div class="text-sm font-medium text-slate-600">Tổng tiền dự kiến: <span id="order-total-preview" class="font-bold text-blue-600 font-mono-num">0 đ</span></div>
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/60 flex items-center justify-between">
+        <div class="text-xs font-medium text-slate-600">Tổng tiền dự kiến: <span id="order-total-preview" class="font-bold text-slate-900 font-mono-num">0 đ</span></div>
         <div class="flex items-center gap-2">
-          <button onclick="closeModal('modal-order')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-base">Hủy</button>
-          <button onclick="submitOrder()" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-base">Gửi Order tới Bếp</button>
+          <button onclick="closeModal('modal-order')" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-base">Hủy</button>
+          <button onclick="submitOrder()" class="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-2xs transition-base">Gửi Order tới Bếp</button>
         </div>
       </div>
     </div>
@@ -601,21 +586,21 @@
 
   <!-- Modal 2: Thanh toán Hóa đơn (Payment Checkout Modal) -->
   <div id="modal-checkout" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-          <i data-lucide="receipt" class="w-5 h-5 text-emerald-600"></i>
-          <span>Thanh toán Hóa đơn</span>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full flex flex-col overflow-hidden animate-modal-in">
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+          <i data-lucide="receipt" class="w-4 h-4 text-slate-700"></i>
+          <span id="checkout-modal-title">Thanh toán Hóa đơn</span>
         </h3>
-        <button onclick="closeModal('modal-checkout')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="closeModal('modal-checkout')" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
 
-      <div class="p-6 space-y-4">
-        <div id="checkout-receipt-info" class="text-xs space-y-1 text-slate-500 border-b border-slate-100 pb-3">
+      <div class="p-5 space-y-3.5">
+        <div id="checkout-receipt-info" class="text-xs space-y-1 text-slate-600 border-b border-slate-100 pb-3">
           <!-- Info -->
         </div>
 
-        <div class="max-h-52 overflow-y-auto">
+        <div class="max-h-48 overflow-y-auto">
           <table class="w-full text-xs">
             <thead class="text-slate-400 font-medium border-b border-slate-100">
               <tr>
@@ -632,42 +617,54 @@
         </div>
 
         <div class="pt-3 border-t border-slate-200 flex items-center justify-between">
-          <span class="text-sm font-bold text-slate-900">Tổng thanh toán:</span>
-          <span id="checkout-total-amount" class="text-xl font-bold text-emerald-600 font-mono-num">0 đ</span>
+          <span class="text-xs font-bold text-slate-800">Tổng thanh toán:</span>
+          <span id="checkout-total-amount" class="text-lg font-bold text-slate-900 font-mono-num">0 đ</span>
         </div>
 
-        <div>
+        <!-- Khối chọn Phương thức thanh toán (chỉ hiện khi chưa thanh toán) -->
+        <div id="checkout-payment-section">
           <label class="block text-xs font-semibold text-slate-700 mb-1">Phương thức thanh toán:</label>
-          <select id="checkout-payment-method" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <select id="checkout-payment-method" class="w-full px-3 py-1.5 border border-slate-300 rounded-md text-xs font-medium focus:ring-1 focus:ring-slate-900 focus:border-slate-900 focus:outline-none bg-white">
             <option value="TienMat">Tiền mặt</option>
             <option value="The">Thẻ ngân hàng (POS)</option>
             <option value="ChuyenKhoan">Chuyển khoản QR</option>
             <option value="ViDienTu">Ví điện tử</option>
           </select>
         </div>
+
+        <!-- Khối huy hiệu Đã thanh toán (chỉ hiện khi xem chứng từ đã thanh toán) -->
+        <div id="checkout-paid-badge" class="hidden flex items-center justify-center p-2.5 bg-emerald-50 border border-emerald-200 rounded-md">
+          <span class="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+            Chứng từ này đã được thanh toán và hoàn tất
+          </span>
+        </div>
       </div>
 
-      <div class="px-6 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-2">
-        <button onclick="closeModal('modal-checkout')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-base">Đóng</button>
-        <button onclick="confirmCheckout()" class="px-5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-base">Xác nhận thanh toán</button>
+      <div class="px-5 py-3 border-t border-slate-200 bg-slate-50/60 flex items-center justify-end gap-2">
+        <button onclick="closeModal('modal-checkout')" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-md transition-base">Đóng</button>
+        <button id="btn-confirm-checkout" onclick="confirmCheckout()" class="px-4 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-md shadow-2xs transition-base flex items-center gap-1.5">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span>Xác nhận thanh toán</span>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- Modal 3: Form CRUD Thêm/Sửa Dữ liệu -->
   <div id="modal-crud" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full flex flex-col overflow-hidden">
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-        <h3 id="modal-crud-title" class="text-base font-bold text-slate-900">Thêm mới bản ghi</h3>
-        <button onclick="closeModal('modal-crud')" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-md w-full flex flex-col overflow-hidden animate-modal-in">
+      <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/60">
+        <h3 id="modal-crud-title" class="text-sm font-bold text-slate-900">Thêm mới bản ghi</h3>
+        <button onclick="closeModal('modal-crud')" class="text-slate-400 hover:text-slate-600 transition-colors"><i data-lucide="x" class="w-4 h-4"></i></button>
       </div>
-      <form id="crud-form" onsubmit="handleCrudSubmit(event)" class="p-6 space-y-4">
+      <form id="crud-form" onsubmit="handleCrudSubmit(event)" class="p-5 space-y-3.5">
         <div id="crud-form-fields" class="space-y-3">
           <!-- Dynamic Form Inputs -->
         </div>
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2">
-          <button type="button" onclick="closeModal('modal-crud')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-base">Hủy</button>
-          <button type="submit" class="px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-base">Lưu dữ liệu</button>
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeModal('modal-crud')" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-base">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-md shadow-2xs transition-base">Lưu dữ liệu</button>
         </div>
       </form>
     </div>
@@ -675,21 +672,21 @@
 
   <!-- Modal 4: Xác nhận xóa -->
   <div id="modal-delete" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop hidden">
-    <div class="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-md w-full p-6 text-center space-y-4">
-      <div class="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto">
-        <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+    <div class="bg-white rounded-xl border border-slate-200 shadow-xl max-w-sm w-full p-5 text-center space-y-3.5 animate-modal-in">
+      <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto border border-rose-200">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
       </div>
-      <h3 class="text-base font-bold text-slate-900">Xác nhận xóa bản ghi?</h3>
+      <h3 class="text-sm font-bold text-slate-900">Xác nhận xóa bản ghi?</h3>
       <p id="delete-confirm-text" class="text-xs text-slate-500">Hành động này không thể hoàn tác nếu bản ghi đã liên kết khóa ngoại.</p>
-      <div class="flex items-center justify-center gap-3 pt-2">
-        <button onclick="closeModal('modal-delete')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-base">Hủy bỏ</button>
-        <button id="btn-confirm-delete" class="px-5 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-sm transition-base">Xác nhận xóa</button>
+      <div class="flex items-center justify-center gap-2 pt-1">
+        <button onclick="closeModal('modal-delete')" class="px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-base">Hủy bỏ</button>
+        <button id="btn-confirm-delete" class="px-4 py-1.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-md shadow-2xs transition-base">Xác nhận xóa</button>
       </div>
     </div>
   </div>
 
   <!-- Toast Notification Container -->
-  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <!-- Main JavaScript App -->
   <script src="/static/js/app.js"></script>
